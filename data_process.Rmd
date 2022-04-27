@@ -1,0 +1,505 @@
+---
+title: "levente_data_process"
+author: "Levente Ronai"
+output: html_document
+---
+
+
+```{r, message = F, warning = F}
+
+options(scipen = 999)
+
+### loading packages
+
+library(psych)
+library(tidyverse)
+library(dplyr)
+library(lme4)
+library(lmerTest)
+library(lavaan)
+library(sjPlot)
+library(car)
+library(data.table)
+library(semTools)
+library(semPlot)
+library(lubridate)
+library(git2r)
+library(naniar)
+library(hms)
+
+```
+
+# 1: import and join of datasets of self-reports and behavioural assessments -------------
+
+```{r}
+
+### import datasets of self-reports and behavioural assessments
+
+
+big_data <- read.csv("levente_alter_data/big_data.csv")
+
+dat_cogtask <- read.csv("levente_alter_data/dat_cogtask.csv")
+
+```
+
+
+```{r}
+
+### mutate created_esm for using timestamps
+
+big_data <-
+  big_data %>% 
+  select(hour_esm = hour, everything()) %>% 
+  mutate(time_esm = as.POSIXct(created_esm),
+         time_esm = as_hms(time_esm),
+         hour_esm = hour(time_esm),
+         minutes_esm = minute(time_esm))
+
+
+```
+
+```{r}
+
+dat_cogtask <- 
+  dat_cogtask %>%
+  select(hour_cog = hour, everything()) %>% 
+  rowwise() %>% 
+  mutate(minutes_cog = ifelse(!is.na(nback_minutes) | !is.na(gonogo_minutes),
+                              round(mean(c(nback_minutes, gonogo_minutes), na.rm = T), digits = 0),
+                              NA
+                              ))
+
+```
+
+
+
+```{r}
+
+### join the two datasets and keep ESM and cogtask responses occured during the same beep and hour (first ESM surveys and than cogtasks)
+
+big_data <- 
+  big_data %>% 
+  left_join(dat_cogtask, by = c("session_esm", "day", "beep"))
+
+```
+
+
+```{r}
+
+big_data <- 
+  big_data %>%
+  mutate(min_bug = as.numeric(!minutes_cog > minutes_esm),
+         hour_bug = as.numeric(!hour_cog >= hour_esm))
+```
+
+```{r}
+
+# big_data %>% 
+#   filter(hour_bug == T) %>%
+#   select(id_esm, created_esm, hour_cog, minutes_cog, hour_esm, minutes_esm, day, beep, date_cogtask, date_esm) # %>% 
+  # view()
+
+```
+
+
+
+```{r}
+
+### if esm and cogtask hours or minutes do not match (due bugs in formr.org), replace cogtask results with NA's (only 36 trials in sum)
+
+big_data <- 
+  big_data %>%
+  mutate(gonogo_dprime = ifelse(min_bug == 1 | hour_bug == 1,
+                                NA,
+                                gonogo_dprime),
+         gonogo_corr_rt_median = ifelse(min_bug == 1 | hour_bug == 1,
+                                NA,
+                                gonogo_corr_rt_median),
+         nback_dprime = ifelse(min_bug == 1 | hour_bug == 1,
+                                NA,
+                                nback_dprime),
+         nback_corr_rt_median = ifelse(min_bug == 1 | hour_bug == 1,
+                                NA,
+                                nback_corr_rt_median),
+         
+         )
+```
+
+# 2: preparing pre-cleaned dataset, screening participants ------------------
+
+```{r}
+
+### selection of relevant variables and filter incomplete three-day blocks (marked with NA) and re-naming of main dataset
+
+dat_cleaned <- 
+  big_data %>% 
+  select(id_esm, age, gender, edu, city, start_date, date_esm, date_cogtask,
+         day, beep, event_pleasantness, sad:active, homeo_hungry, coffee, alcohol,
+         contains(c("gonogo", "nback", "mzq_", "mss_", "ple_")), -contains(c("minutes")))
+
+```
+
+```{r}
+
+write.csv(dat_cleaned, "levente_alter_data/dat_cleaned.csv", row.names = F)
+
+```
+
+```{r}
+
+dat_cleaned %>% select(id_esm) %>% summarise(n_distinct(id_esm))
+
+```
+
+```{r}
+
+### making gender variable to be considered as a factor  
+
+dat_cleaned  <-  
+  dat_cleaned %>%
+  mutate(gender = factor(gender, levels = c(1, 2, 3), labels = c("Female", "Male", "Other")))
+
+```
+
+# 3: parallel analysis, principal component analysis & multilevel CFA
+
+```{r}
+
+### parallel analysis of affective states
+
+# prin <-
+#   dat_cleaned %>%
+#   select(sad, calm, afraid, unrested, enthusiastic, cheerful, irritated, active, angry)
+# 
+# (parallel <- fa.parallel(prin, fm = "pa"))
+# 
+# 
+# (principal <-
+#     psych::principal(prin, nfactors = 2, rotate = "oblimin"))
+# dat_cleaned <-
+#   dat_cleaned %>%
+#   cbind(as.data.frame(principal$scores)) %>%
+#   mutate(negaff = TC1,
+#          posaff = TC2) %>%
+#   select(-TC1, -TC2)
+
+### parallel analysis of PLE
+
+# prin_ple <-
+#   dat_cleaned %>%
+#   select(ple_control, ple_strange, ple_thoughts, ple_suspicion, ple_treatment, ple_perception, ple_thougtscontrol)
+# 
+# (parallel_ple <- fa.parallel(prin_ple, fm = "pa"))
+# 
+# 
+# (principal_ple <-
+#     psych::principal(prin_ple, nfactors = 1, rotate = "oblimin"))
+# 
+# dat_cleaned <-
+#   dat_cleaned %>%
+#   cbind(as.data.frame(principal_ple$scores)) %>%
+#   mutate(ple = PC1) %>% 
+#   select(-PC1)
+
+```
+
+```{r, warning = T}
+
+cfa_aff <-
+  dat_cleaned %>%
+  filter(!is.na(date_esm)) %>%
+  select(id_esm, date_esm, beep,
+         sad, afraid, unrested, irritated, angry) %>%
+  filter_at(vars(sad:angry), all_vars(!is.na(.))) %>%
+  distinct() %>%
+  ungroup()
+
+cfa_aff_syntax <- '
+
+  level: 1
+
+      negaff_within   =~    sad + afraid + unrested + irritated + angry
+      irritated	~~ angry
+
+
+  level: 2
+
+      negaff_between   =~    sad + afraid + unrested + irritated + angry
+      irritated	~~ angry
+
+'
+
+fit <- cfa(model = cfa_aff_syntax, data = cfa_aff, cluster = "id_esm", std.lv = TRUE, estimator = "ML")
+```
+
+
+```{r, warning = T}
+fitMeasures(fit, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
+```
+
+
+```{r, warning = T}
+
+summary(fit, fit.measures = TRUE, standardize = TRUE)
+
+
+# modificationindices(fit) %>%
+#   select("lhs", "op", "rhs", "level", "mi") %>%
+#   filter(mi > 11) %>%
+#   arrange(desc(mi)) %>%
+#   head(n = 10) %>%
+#   print()
+
+```
+
+```{r, warning = T}
+# within-person factor loadings
+(inspect(fit, what = "std")$within$lambda)
+
+# between-person factor loadings
+(inspect(fit, what = "std")$id_esm$lambda)
+
+# reliability of NA model
+(reliability(fit))
+
+```
+
+
+```{r, warning = T}
+# between subject factor score-okat hozzáadni a within subject-ekhez
+
+dat_cfa_lev_2 <-
+  cfa_aff %>%
+  select(id_esm) %>%
+  distinct() %>%
+  cbind(lavPredict(fit, newdata = cfa_aff[4:8], level = 2L))
+
+dat_cfa_lev_1 <-
+  cfa_aff %>%
+  cbind(lavPredict(fit, newdata = cfa_aff[4:8], level = 1L)) %>%
+  select(-c(sad:angry))
+
+dat_cfa <-
+  dat_cfa_lev_1 %>%
+  left_join(dat_cfa_lev_2, by = "id_esm") %>%
+  mutate(negaff_cfa =  negaff_within + negaff_between)
+
+dat_cleaned <-
+  dat_cleaned %>%
+  left_join(dat_cfa, by = c("id_esm", "date_esm", "beep"))
+
+
+```
+
+# ple
+
+```{r, warning = T}
+
+cfa_ple <-
+  dat_cleaned %>%
+  filter(!is.na(date_esm)) %>%
+  select(id_esm, date_esm, beep,
+         ple_control, ple_strange, ple_thoughts, ple_suspicion,
+         ple_treatment, ple_perception, ple_thougtscontrol, ple_familiarstrange) %>%
+  filter_at(vars(ple_control:ple_familiarstrange), all_vars(!is.na(.))) %>%
+  distinct() %>%
+  ungroup()
+
+cfa_ple_syntax <- '
+
+  level: 1
+
+      ple_within   =~    ple_control + ple_strange + ple_thoughts + 
+                         ple_suspicion + ple_treatment +
+                         ple_thougtscontrol
+
+
+  level: 2
+
+      ple_between   =~   ple_control + ple_strange + ple_thoughts + 
+                         ple_suspicion + ple_treatment + 
+                         ple_thougtscontrol
+                         
+                         ple_control	~~	ple_strange
+
+'
+
+fit_ple <- cfa(model = cfa_ple_syntax, data = cfa_ple, cluster = "id_esm", std.lv = TRUE, estimator = "ML")
+
+```
+
+
+```{r, warning = T}
+fitMeasures(fit_ple, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
+```
+
+
+```{r, warning = T}
+
+summary(fit_ple, fit.measures = TRUE, standardize = TRUE)
+
+
+# modificationindices(fit_ple) %>%
+#   select("lhs", "op", "rhs", "level", "mi") %>%
+#   filter(mi > 11) %>%
+#   arrange(desc(mi)) %>%
+#   head(n = 10) %>%
+#   print()
+
+```
+
+```{r, warning = T}
+# within-person factor loadings
+(inspect(fit_ple, what = "std")$within$lambda)
+
+# between-person factor loadings
+(inspect(fit_ple, what = "std")$id_esm$lambda)
+
+# reliability of NA model
+(reliability(fit_ple))
+
+```
+
+
+```{r, warning = T}
+# between subject factor score-okat hozzáadni a within subject-ekhez
+
+dat_ple_lev_2 <-
+  cfa_ple %>%
+  select(id_esm) %>%
+  distinct() %>%
+  cbind(lavPredict(fit_ple, newdata = cfa_ple[4:11], level = 2L))
+
+dat_ple_lev_1 <-
+  cfa_ple %>%
+  cbind(lavPredict(fit_ple, newdata = cfa_ple[4:11], level = 1L)) %>%
+  select(-c(ple_control:ple_familiarstrange))
+
+dat_ple <-
+  dat_ple_lev_1 %>%
+  left_join(dat_ple_lev_2, by = "id_esm") %>%
+  mutate(ple_cfa =  ple_within + ple_between)
+
+dat_cleaned <-
+  dat_cleaned %>% 
+  left_join(dat_ple, by = c("id_esm", "date_esm", "beep"))
+
+
+```
+
+# 4: centering metrics within- and between individuals ------------
+
+```{r}
+
+### recode pleasantness of the event
+
+dat_cleaned <- 
+  dat_cleaned %>% 
+  mutate(event_unpleasantness = 8 - event_pleasantness) %>% 
+  select(-event_pleasantness)
+
+### within-person centering of NA and cogtasks
+
+dat_cleaned <- 
+  dat_cleaned %>% 
+  group_by(id_esm) %>%
+  mutate_at(vars(gonogo_dprime, nback_dprime, gonogo_corr_rt_median,
+                 nback_corr_rt_median, negaff_cfa, ple_cfa, event_unpleasantness),
+            .funs = list(centered = ~ scale(., scale = F, center = T))) %>% 
+  distinct()
+
+```
+
+
+```{r}
+
+dat_cleaned <-
+  dat_cleaned %>%
+  arrange(id_esm, day, beep) %>%
+  group_by(id_esm, day) %>%
+  mutate_at(vars(negaff_cfa_centered,
+                 ple_cfa_centered,
+                 event_unpleasantness_centered,
+                 gonogo_dprime_centered,
+                 nback_dprime_centered,
+                 gonogo_corr_rt_median_centered,
+                 nback_corr_rt_median_centered),
+            .funs = list(lag = ~ lag(.))) %>%
+  ungroup() %>% 
+  distinct()
+
+```
+
+
+
+```{r}
+
+### calculating between-level means of NA, PA, event unpleasantness, cogtask variables
+
+
+dat_cleaned <-
+  dat_cleaned %>%
+  group_by(id_esm) %>%
+  mutate_at(vars(negaff_cfa,
+                 ple_cfa,
+                 event_unpleasantness,
+                 gonogo_dprime,
+                 nback_dprime,
+                 gonogo_corr_rt_median,
+                 nback_corr_rt_median),
+            .funs = list(mean = ~ mean(., na.rm = T))) %>%
+  ungroup()
+
+```
+
+# 5: creation of final dataset for modeling
+
+```{r}
+
+# data for beep models - select model-relevant variables  
+
+model_dat <- 
+  dat_cleaned %>% 
+  select(id_esm, edu, gender, age, city, start_date, day, beep,
+         
+    
+          
+         gonogo_dprime, nback_dprime, 
+         event_unpleasantness, event_unpleasantness_centered, 
+         
+         gonogo_corr_rt_median_centered, nback_corr_rt_median_centered,
+         gonogo_dprime_centered, nback_dprime_centered,
+         
+         negaff_cfa, negaff_cfa_centered,
+         ple_cfa, ple_cfa_centered,
+
+         contains(c("_mean", "_lag")),
+         mss_neg, mss_pos, mss_dis, mzq_refuse_reflection,
+         mzq_emotional_awareness, mzq_psychic_equivalence, mzq_regulate_affect, mzq_sum
+         ) %>% 
+  
+#  filter_at(vars(event_unpleasantness_centered:negaff_centered_lag), all_vars(!is.na(.))) %>%
+  distinct() # %>% view()
+
+```
+
+```{r}
+
+# grand-mean centering of participants' mean drpime scores 
+
+
+# model_dat <- 
+#   model_dat %>%
+#   mutate(gonogo_dprime_grand_centered = scale(gonogo_dprime_mean, center = T, scale = F),
+#          nback_dprime_grand_centered = scale(nback_dprime_mean, center = T, scale = F),
+#          negaff_mean_grand_centered = scale(negaff_mean, center = T, scale = F))
+   
+```
+
+
+```{r}
+
+write.csv(model_dat, "processed_data/levente_alter_data/alter_model_dat.csv", row.names = F)
+
+```
+
