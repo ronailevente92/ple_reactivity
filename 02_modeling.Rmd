@@ -1,0 +1,194 @@
+---
+title: "levente_alter_modeling"
+author: "Levente Ronai"
+date: '2022 04 25 '
+output: html_document
+---
+
+```{r, message=F, warning=F, include=F}
+
+options(scipen = 999)
+
+library(corrplot)
+library(readxl)
+library(xts)
+library(psych)
+library(qgraph)
+library(tidyverse)
+library(dplyr)
+library(purrr)
+library(lme4)
+library(lmerTest)
+library(lavaan)
+library(sjPlot)
+library(ggplot2)
+library(car)
+library(mlVAR)
+library(graphicalVAR)
+
+```
+
+
+# import data
+
+```{r}
+
+dat_cleaned <- read_csv("levente_alter_data/dat_cleaned.csv")
+
+model_dat <- read.csv("levente_alter_data/model_dat.csv")
+
+# model_dat <- 
+#   model_dat %>%
+#   filter_at(vars(event_unpleasantness_centered:ple_cfa_centered, negaff_cfa_centered_lag), all_vars(!is.na(.)))
+
+```
+
+```{r}
+
+m_1 <- 
+  model_dat %>% 
+  lmer(
+    negaff_cfa ~ 
+      day + poly(beep, 2) + 
+      event_unpleasantness_centered * (mss_dis) + event_unpleasantness_mean + (event_unpleasantness_centered | id_esm),
+    data = .
+  )
+
+
+```
+
+
+```{r}
+summary(m_1)
+```
+
+
+```{r}
+
+model_dat <-
+  model_dat %>%
+  mutate(negaff_cfa_log10 = log10(negaff_cfa + 2))
+
+```
+
+
+```{r}
+# gonogo_dprime_centered
+
+mod_ple_1 <-
+
+  lmer(
+    negaff_cfa_log10 ~ beep + day + age + gender +
+      ple_cfa_centered * gonogo_dprime_centered + negaff_cfa_centered_lag + # + event_unpleasantness_centered + mss_dis +
+      (ple_cfa_centered + negaff_cfa_centered_lag | id_esm ), data = model_dat)
+
+
+summary(mod_ple_1)
+
+```
+
+```{r}
+
+plot_model(mod_ple_1, type = "diag")
+
+```
+
+
+```{r}
+
+plot_model(mod_ple_1, type = "int")
+
+```
+
+
+```{r}
+# nback_dprime_centered
+
+mod_ple_2 <-
+
+  lmer(
+    negaff_cfa_log10 ~ beep + day + age + gender +
+      ple_cfa_centered * nback_dprime_centered + negaff_cfa_centered_lag + event_unpleasantness_centered + mss_dis +
+      (ple_cfa_centered + negaff_cfa_centered_lag | id_esm ), data = model_dat)
+
+
+summary(mod_ple_2)
+
+```
+
+```{r}
+
+plot_model(mod_ple_2, type = "diag")
+
+```
+
+
+```{r}
+
+plot_model(mod_ple_2, type = "int")
+
+```
+
+
+```{r}
+# nback_dprime_centered
+
+# mod_nback_pca <-
+# 
+#    lmer(
+#      negaff ~ poly(beep, 2) + day + age + gender +
+#       nback_dprime_centered * event_unpleasantness_centered +
+#       negaff_centered_lag + 
+#       (event_unpleasantness_centered + nback_dprime_centered + negaff_centered_lag | id_esm ), data = model_dat)
+
+
+# vif(mod_nback_pca)
+# summary(mod_nback_pca)
+
+```
+
+
+```{r, message=F, warning=F}
+
+vars <- 
+  c("negaff", "gonogo_dprime", "ple", "event_unpleasantness", "homeo_hungry", "coffee", "alcohol")
+
+```
+
+### model number 1
+
+
+```{r}  
+
+#, echo=FALSE, message = FALSE, warning=F, include=F}
+
+res1_corr <- 
+  mlVAR(
+    data = model_dat,
+    vars = vars,
+    idvar = "id_esm",
+    dayvar = "day",
+    beepvar = "beep",
+    contemporaneous = "correlated",
+    temporal = "correlated")      
+
+```
+
+
+```{r, fig.height=6, fig.width=6, message=F, warning=F}
+
+plot(res1_corr, "temporal", title = "Temporal", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+
+```
+
+```{r, fig.height=6, fig.width=6, message=F, warning=F}
+
+plot(res1_corr, "contemporaneous", title = "Contemporaneous", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+
+```
+
+```{r, fig.height=6, fig.width=6, message=F, warning=F}
+
+plot(res1_corr, "between", title = "between", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+
+```

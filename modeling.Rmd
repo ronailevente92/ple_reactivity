@@ -35,7 +35,7 @@ library(graphicalVAR)
 
 dat_cleaned <- read_csv("levente_alter_data/dat_cleaned.csv")
 
-model_dat <- read.csv("levente_alter_data/alter_model_dat.csv")
+model_dat <- read.csv("levente_alter_data/model_dat.csv")
 
 # model_dat <- 
 #   model_dat %>%
