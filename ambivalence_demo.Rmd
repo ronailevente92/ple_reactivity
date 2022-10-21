@@ -1,0 +1,42 @@
+---
+title: "Ambivalence demo"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+expand.grid(1:50, 1:50) %>% 
+  tibble() %>% 
+  set_names(c("neg", "pos")) %>% 
+  mutate(
+    ambi = (neg+pos)/2 - abs(neg-pos)
+  ) %>% 
+  ggplot(aes(neg, pos, fill = ambi)) + 
+  geom_tile() + 
+  labs(
+    fill = "Ambivalence",
+    x    = "Negative affect",
+    y    = "Positive affect"
+  ) 
+```
+
+```{r}
+dat <- 
+  read_csv("data_processed/model_dat.csv")
+```
+
+
+Levente, ezt nézd meg majd úgy, hogy posaff van a ple helyett! 
+Nekem az a gyanúm, hogy a bal felső sarok nagyon üres lesz (egyértelműen pozitív állapotok), és a jobb alsó sarok felé aszimmetrikus lesz az ábra (az egyértelmű állapotok inkább negatívak)
+Ha ez van, akkor a mintavétel torzított volt oylan szempontból, hogy a jókedvű állapotok hiányoznak az adatbázisunkból
+Vagy nem töltötték ki olyankor, vagy a mintavételezett időszakban ezek nem fordultak elő a résztvevőknél 
+
+```{r}
+dat %>% 
+  ggplot(aes(negaff_cfa, ple_cfa)) + 
+  geom_bin_2d() 
+```
+
