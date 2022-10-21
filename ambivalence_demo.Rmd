@@ -6,26 +6,34 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 ```
+```{r}
+model_dat <- read.csv("data_processed/model_dat.csv")
+```
+
 
 ```{r}
-expand.grid(1:50, 1:50) %>% 
-  tibble() %>% 
-  set_names(c("neg", "pos")) %>% 
-  mutate(
-    ambi = (neg+pos)/2 - abs(neg-pos)
-  ) %>% 
-  ggplot(aes(neg, pos, fill = ambi)) + 
-  geom_tile() + 
+
+model_dat %>% 
+  ggplot(aes(negaff_cfa, posaff_cfa, fill = ambivalence)) + 
+  geom_tile(width = 0.3, height = 0.3) +
+  
   labs(
     fill = "Ambivalence",
     x    = "Negative affect",
     y    = "Positive affect"
-  ) 
+    ) +
+  
+  scale_fill_gradient(low = "darkblue", high = "yellow") 
 ```
 
-```{r}
-dat <- 
-  read_csv("data_processed/model_dat.csv")
+```{r, fig.height=3, fig.width=6}
+model_dat %>% 
+  select(posaff_cfa, negaff_cfa, ambivalence) %>% 
+  pivot_longer(cols = c(posaff_cfa, negaff_cfa, ambivalence),
+               names_to = "Variable", values_to = "Value") %>% 
+  ggplot(aes(Value)) +
+  geom_histogram(alpha = 0.5, binwidth = 0.5, fill = "darkblue") +
+  facet_wrap(~ Variable)
 ```
 
 
@@ -34,9 +42,12 @@ Nekem az a gyanúm, hogy a bal felső sarok nagyon üres lesz (egyértelműen po
 Ha ez van, akkor a mintavétel torzított volt oylan szempontból, hogy a jókedvű állapotok hiányoznak az adatbázisunkból
 Vagy nem töltötték ki olyankor, vagy a mintavételezett időszakban ezek nem fordultak elő a résztvevőknél 
 
+
+Done: köszi Berci, igazad van, hogy torzított a minta és hogy lesznek nagyon üres részek, de inkább a nagyon pozitív ÉS egyszerre nagyon negatív együttjárások hiányoznak és azért bőven van a nagyon pozitív nagyon ÉS nem negatív együttjárásból
+
 ```{r}
-dat %>% 
-  ggplot(aes(negaff_cfa, ple_cfa)) + 
+model_dat %>% 
+  ggplot(aes(negaff_cfa, posaff_cfa)) + 
   geom_bin_2d() 
 ```
 
