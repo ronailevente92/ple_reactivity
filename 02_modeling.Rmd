@@ -1,8 +1,14 @@
 ---
-title: "levente_alter_modeling"
+title: "levente_data_process"
 author: "Levente Ronai"
-date: '2022 04 25 '
 output: html_document
+  html_document:
+   theme: spacelab
+   code_download: true
+   toc: true
+   toc_float: true
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r, message=F, warning=F, include=F}
@@ -29,13 +35,16 @@ library(graphicalVAR)
 ```
 
 
+# todo: facet_wrap arra, hogy személyen belül hogyan korrelál a posaff negaff
+# todo 2: hőtérkép a lehetséges komnnációkkal geom_tile
+
 # import data
 
-```{r}
+```{r, message=F, warning=F}
 
-dat_cleaned <- read_csv("levente_alter_data/dat_cleaned.csv")
+dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 
-model_dat <- read.csv("levente_alter_data/model_dat.csv")
+model_dat <- read.csv("data_processed/model_dat.csv")
 
 # model_dat <- 
 #   model_dat %>%
@@ -43,7 +52,202 @@ model_dat <- read.csv("levente_alter_data/model_dat.csv")
 
 ```
 
+# preparing dataset
+
 ```{r}
+
+model_dat <- 
+  model_dat %>% 
+  mutate(
+    female = 
+      ifelse(
+        grepl("Female", gender),
+        1,
+        0
+      ),
+    male = 
+      ifelse(
+        grepl("Male", gender),
+        1,
+        0
+      ),
+    other = 
+      ifelse(
+        grepl("Other", gender),
+        1,
+        0
+      )
+  ) %>% 
+  mutate(
+    z_event_within_ind = factor(z_event_within_group, levels = c(-1, 0, 1), labels = c("Negative", "Neutral", "Positive")))
+    
+    
+  
+```
+
+
+```{r}
+ambivalence_model <-
+
+  lmer(
+    ambivalence ~ 
+      day + beep + gender + age +
+      event_unpleasantness_centered * ple_cfa_centered + 
+      negaff_cfa + I(negaff_cfa^2) +
+      (event_unpleasantness_centered + ple_cfa_centered | id_esm), data = model_dat)
+
+summary(ambivalence_model)
+```
+
+
+```{r}
+plot_model(ambivalence_model, type = "pred")
+
+
+```
+
+```{r}
+ambivalence_model_trait <-
+
+  lmer(
+    ambivalence ~ 
+      day + beep + gender + age +
+       event_unpleasantness_centered * mss_dis + negaff_cfa + I(negaff_cfa^2) +
+      (event_unpleasantness_centered  | id_esm), data = model_dat)
+
+summary(ambivalence_model_trait)
+```
+
+
+```{r}
+plot_model(ambivalence_model_trait, type = "int")
+
+
+```
+
+```{r}
+
+bias_model <-
+  
+  model_dat %>% 
+#  filter(z_event_within_ind == "Neutral") %>% 
+  
+  lmer(
+    negaff_cfa ~ 
+      day + beep + gender + age +
+      event_unpleasantness_centered * ple_cfa_centered + 
+      (event_unpleasantness_centered * ple_cfa_centered  | id_esm), data = .)
+
+
+
+summary(bias_model)
+
+
+plot_model(bias_model, type = "int")
+
+```
+
+
+```{r}
+
+offset_model <-
+  
+  model_dat %>% 
+#  filter(z_event_within_ind == "Neutral") %>% 
+  
+  lmer(
+    posaff_cfa ~ 
+      day + beep + gender + age + 
+      event_unpleasantness_centered * ple_cfa_centered +
+      (event_unpleasantness_centered * ple_cfa_centered | id_esm), data = .)
+
+
+
+summary(offset_model)
+
+
+plot_model(offset_model, type = "pred")
+
+```
+
+
+```{r}
+# mzq_refuse_reflection, mzq_emotional_awareness, mzq_psychic_equivalence, mzq_regulate_affect, mzq_sum
+
+cont_model <-
+
+  lmer(
+    negaff_cfa ~ 
+      gender + age + day + beep + 
+      ple_cfa_centered * nback_dprime_centered +
+      (ple_cfa_centered * nback_dprime_centered | id_esm), data = model_dat)
+
+
+summary(cont_model)
+
+plot_model(cont_model, type = "int")
+
+
+```
+
+
+```{r}
+# mss_neg, mss_pos, mss_dis
+
+bias_model <-
+
+  lmer(
+    negaff_cfa ~ 
+      day + beep + age + gender +
+      event_unpleasantness_centered * mss_pos  + 
+      (event_unpleasantness_centered | id_esm),
+    data = model_dat) 
+
+summary(bias_model)
+
+plot_model(bias_model, type = "int")
+
+
+```
+
+
+```{r}
+
+offset_model <-
+
+  lmer(
+    posaff_cfa ~ day + beep + 
+      mss_dis * z_event_within_ind + 
+      (z_event_within_ind | id_esm),
+    data = model_dat) #%>% filter(z_event_within_group == 0))
+
+summary(offset_model)
+
+
+plot_model(offset_model, type = "int")
+
+```
+
+
+```{r}
+
+ambi_model <-
+
+  lmer(
+    ambivalence ~ day + beep + age + gender + 
+      event_unpleasantness_centered * mss_dis + 
+      (event_unpleasantness_centered | id_esm),
+    data = model_dat)
+
+summary(ambi_model)
+
+plot_model(ambi_model, type = "int")
+
+
+```
+
+
+```{r, include=F}
 
 m_1 <- 
   model_dat %>% 
@@ -56,23 +260,19 @@ m_1 <-
 
 
 ```
+```{r, include=F}
 
-
-```{r}
 summary(m_1)
+
 ```
-
-
-```{r}
+```{r, include=F}
 
 model_dat <-
   model_dat %>%
   mutate(negaff_cfa_log10 = log10(negaff_cfa + 2))
 
 ```
-
-
-```{r}
+```{r, include=F}
 # gonogo_dprime_centered
 
 mod_ple_1 <-
@@ -86,22 +286,17 @@ mod_ple_1 <-
 summary(mod_ple_1)
 
 ```
-
-```{r}
+```{r, include=F}
 
 plot_model(mod_ple_1, type = "diag")
 
 ```
-
-
-```{r}
+```{r, include=F}
 
 plot_model(mod_ple_1, type = "int")
 
 ```
-
-
-```{r}
+```{r, include=F}
 # nback_dprime_centered
 
 mod_ple_2 <-
@@ -115,22 +310,104 @@ mod_ple_2 <-
 summary(mod_ple_2)
 
 ```
-
-```{r}
+```{r, include=F}
 
 plot_model(mod_ple_2, type = "diag")
 
 ```
-
-
-```{r}
+```{r, include=F}
 
 plot_model(mod_ple_2, type = "int")
 
 ```
 
+```{r, warning=F}
+
+mediation_model <- '
+        
+        level: 1
+        
+              negaff_within =~
+              sad + afraid + unrested + irritated + angry
+              
+              ple_within =~ 
+              ple_control + ple_strange + ple_thoughts + 
+              ple_suspicion + ple_treatment + ple_thougtscontrol
+
+            # direct effects
+              negaff_within  ~
+              d_w * ple_within +       
+              # control variables
+              stress + beep + day
+                
+            # mediator 1
+              gonogo_dprime ~  
+              m1_w * ple_within +
+              # control variables
+              stress + beep + day
+                
+             # mediator 2
+              nback_dprime ~  
+              m2_w * ple_within +
+              # control variables
+              stress + beep + day
+            
+            # indirect effects
+              ple_gonog_na_w :=  m1_w * d_w
+              ple_nback_na_w :=  m2_w * d_w
+             
+            # total effects
+              total_ple_w :=  
+              d_w + (m1_w * d_w) + (m2_w * d_w)
+            
+        level: 2
+            
+            negaff_between =~
+              sad + afraid + unrested + irritated + angry
+            
+            ple_between =~ 
+              ple_control + ple_strange + ple_thoughts + 
+              ple_suspicion + ple_treatment + ple_thougtscontrol
+            
+            # direct effects
+              negaff_between  ~
+              d_b * ple_between +       
+              # control variables
+              stress + age + gender
+            
+            # mediator 1
+              gonogo_dprime ~  
+              m1_b * ple_between +
+              # control variables
+              stress + age + gender
+              
+            # mediator 2
+              nback_dprime ~  
+              m2_b * ple_between +
+              # control variables
+              stress + age + gender
+            
+            # indirect effects
+              ple_gonog_na_b :=  m1_b * d_b
+              ple_nback_na_b :=  m2_b * d_b
+            
+            # total effects
+              total_ple_b :=  
+              d_b + (m1_b * d_b) + (m2_b * d_b)
+            '
+
+fit <- sem(model = mediation_model, data = model_dat_mediation, cluster = "id_esm", estimator = "ML")
+
+```
 
 ```{r}
+
+summary(fit, std = T, fit.measures = T)
+
+```
+
+
+```{r, include=F}
 # nback_dprime_centered
 
 # mod_nback_pca <-
@@ -148,47 +425,45 @@ plot_model(mod_ple_2, type = "int")
 ```
 
 
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, include=F}
 
-vars <- 
-  c("negaff", "gonogo_dprime", "ple", "event_unpleasantness", "homeo_hungry", "coffee", "alcohol")
+# vars <- 
+#   c("negaff", "gonogo_dprime", "ple", "event_unpleasantness", "homeo_hungry", "coffee", "alcohol")
 
 ```
 
-### model number 1
 
-
-```{r}  
+```{r, include=F}  
 
 #, echo=FALSE, message = FALSE, warning=F, include=F}
 
-res1_corr <- 
-  mlVAR(
-    data = model_dat,
-    vars = vars,
-    idvar = "id_esm",
-    dayvar = "day",
-    beepvar = "beep",
-    contemporaneous = "correlated",
-    temporal = "correlated")      
+# res1_corr <- 
+#   mlVAR(
+#     data = model_dat,
+#     vars = vars,
+#     idvar = "id_esm",
+#     dayvar = "day",
+#     beepvar = "beep",
+#     contemporaneous = "correlated",
+#     temporal = "correlated")      
 
 ```
 
 
-```{r, fig.height=6, fig.width=6, message=F, warning=F}
+```{r, fig.height=6, fig.width=6, message=F, warning=F, include=F}
 
-plot(res1_corr, "temporal", title = "Temporal", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
-
-```
-
-```{r, fig.height=6, fig.width=6, message=F, warning=F}
-
-plot(res1_corr, "contemporaneous", title = "Contemporaneous", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+# plot(res1_corr, "temporal", title = "Temporal", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
 
 ```
 
-```{r, fig.height=6, fig.width=6, message=F, warning=F}
+```{r, fig.height=6, fig.width=6, message=F, warning=F, include=F}
 
-plot(res1_corr, "between", title = "between", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+# plot(res1_corr, "contemporaneous", title = "Contemporaneous", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+
+```
+
+```{r, fig.height=6, fig.width=6, message=F, warning=F, include=F}
+
+# plot(res1_corr, "between", title = "between", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
 
 ```

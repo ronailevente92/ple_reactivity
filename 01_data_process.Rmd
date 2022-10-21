@@ -179,9 +179,14 @@ dat_cleaned  <-
 # dat_cleaned <-
 #   dat_cleaned %>%
 #   cbind(as.data.frame(principal$scores)) %>%
-#   mutate(negaff = TC1,
-#          posaff = TC2) %>%
+#   mutate(negaff_pca = TC1,
+#          posaff_pca = TC2) %>%
 #   select(-TC1, -TC2)
+
+```
+
+
+```{r}
 
 ### parallel analysis of PLE
 
@@ -205,7 +210,97 @@ dat_cleaned  <-
 
 ```{r, warning = T}
 
-cfa_aff <-
+cfa_posaff <-
+  dat_cleaned %>%
+  filter(!is.na(date_esm)) %>%
+  select(id_esm, date_esm, beep,
+         active, enthusiastic, cheerful, calm) %>%
+  filter_at(vars(active:calm), all_vars(!is.na(.))) %>%
+  distinct() %>%
+  ungroup()
+
+cfa_posaff_syntax <- '
+
+  level: 1
+
+      posaff_within   =~    active + enthusiastic + cheerful + calm
+      cheerful	~~	calm
+
+
+  level: 2
+
+      posaff_between   =~    active + enthusiastic + cheerful + calm
+      cheerful	~~	calm
+
+'
+
+fit_posaff <- cfa(model = cfa_posaff_syntax, data = cfa_posaff, cluster = "id_esm", std.lv = TRUE, estimator = "ML")
+
+```
+
+```{r, warning = T}
+
+fitMeasures(fit_posaff, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
+
+```
+
+
+```{r, warning = T}
+
+summary(fit_posaff, fit.measures = TRUE, standardize = TRUE)
+
+
+# modificationindices(fit_posaff) %>%
+#   select("lhs", "op", "rhs", "level", "mi") %>%
+#   filter(mi > 11) %>%
+#   arrange(desc(mi)) %>%
+#   head(n = 10) %>%
+#   print()
+
+```
+
+```{r, warning = T}
+# within-person factor loadings
+(inspect(fit_posaff, what = "std")$within$lambda)
+
+# between-person factor loadings
+(inspect(fit_posaff, what = "std")$id_esm$lambda)
+
+# reliability of NA model
+(reliability(fit_posaff))
+
+```
+
+
+```{r, warning = T}
+# between subject factor score-okat hozzáadni a within subject-ekhez
+
+dat_cfa_lev_2 <-
+  cfa_posaff %>%
+  select(id_esm) %>%
+  distinct() %>%
+  cbind(lavPredict(fit_posaff, newdata = cfa_posaff[4:7], level = 2L))
+
+dat_cfa_lev_1 <-
+  cfa_posaff %>%
+  cbind(lavPredict(fit_posaff, newdata = cfa_posaff[4:7], level = 1L)) %>%
+  select(-c(active:calm))
+
+dat_cfa <-
+  dat_cfa_lev_1 %>%
+  left_join(dat_cfa_lev_2, by = "id_esm") %>%
+  mutate(posaff_cfa =  posaff_within + posaff_between)
+
+dat_cleaned <-
+  dat_cleaned %>%
+  left_join(dat_cfa, by = c("id_esm", "date_esm", "beep"))
+
+
+```
+
+```{r, warning = T}
+
+cfa_negaff <-
   dat_cleaned %>%
   filter(!is.na(date_esm)) %>%
   select(id_esm, date_esm, beep,
@@ -214,7 +309,7 @@ cfa_aff <-
   distinct() %>%
   ungroup()
 
-cfa_aff_syntax <- '
+cfa_negaff_syntax <- '
 
   level: 1
 
@@ -229,18 +324,19 @@ cfa_aff_syntax <- '
 
 '
 
-fit <- cfa(model = cfa_aff_syntax, data = cfa_aff, cluster = "id_esm", std.lv = TRUE, estimator = "ML")
+fit_negaff <- cfa(model = cfa_negaff_syntax, data = cfa_negaff, cluster = "id_esm", std.lv = TRUE, estimator = "ML")
+
 ```
 
 
 ```{r, warning = T}
-fitMeasures(fit, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
+fitMeasures(fit_negaff, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
 ```
 
 
 ```{r, warning = T}
 
-summary(fit, fit.measures = TRUE, standardize = TRUE)
+summary(fit_negaff, fit.measures = TRUE, standardize = TRUE)
 
 
 # modificationindices(fit) %>%
@@ -254,13 +350,13 @@ summary(fit, fit.measures = TRUE, standardize = TRUE)
 
 ```{r, warning = T}
 # within-person factor loadings
-(inspect(fit, what = "std")$within$lambda)
+(inspect(fit_negaff, what = "std")$within$lambda)
 
 # between-person factor loadings
-(inspect(fit, what = "std")$id_esm$lambda)
+(inspect(fit_negaff, what = "std")$id_esm$lambda)
 
 # reliability of NA model
-(reliability(fit))
+(reliability(fit_negaff))
 
 ```
 
@@ -269,14 +365,14 @@ summary(fit, fit.measures = TRUE, standardize = TRUE)
 # between subject factor score-okat hozzáadni a within subject-ekhez
 
 dat_cfa_lev_2 <-
-  cfa_aff %>%
+  cfa_negaff %>%
   select(id_esm) %>%
   distinct() %>%
-  cbind(lavPredict(fit, newdata = cfa_aff[4:8], level = 2L))
+  cbind(lavPredict(fit_negaff, newdata = cfa_negaff[4:8], level = 2L))
 
 dat_cfa_lev_1 <-
-  cfa_aff %>%
-  cbind(lavPredict(fit, newdata = cfa_aff[4:8], level = 1L)) %>%
+  cfa_negaff %>%
+  cbind(lavPredict(fit_negaff, newdata = cfa_negaff[4:8], level = 1L)) %>%
   select(-c(sad:angry))
 
 dat_cfa <-
@@ -349,6 +445,7 @@ summary(fit_ple, fit.measures = TRUE, standardize = TRUE)
 ```
 
 ```{r, warning = T}
+
 # within-person factor loadings
 (inspect(fit_ple, what = "std")$within$lambda)
 
@@ -387,6 +484,17 @@ dat_cleaned <-
 
 ```
 
+
+```{r}
+# ambivalence
+
+dat_cleaned <- 
+  dat_cleaned %>% 
+  group_by(id_esm, day, beep) %>% 
+  mutate(ambivalence = ((posaff_cfa + negaff_cfa)/2) - abs(posaff_cfa - negaff_cfa))
+  
+```
+
 # 4: centering metrics within- and between individuals ------------
 
 ```{r}
@@ -395,8 +503,8 @@ dat_cleaned <-
 
 dat_cleaned <- 
   dat_cleaned %>% 
-  mutate(event_unpleasantness = 8 - event_pleasantness) %>% 
-  select(-event_pleasantness)
+  mutate(event_unpleasantness = 8 - event_pleasantness) # %>% 
+ # select(-event_pleasantness)
 
 ### within-person centering of NA and cogtasks
 
@@ -404,7 +512,7 @@ dat_cleaned <-
   dat_cleaned %>% 
   group_by(id_esm) %>%
   mutate_at(vars(gonogo_dprime, nback_dprime, gonogo_corr_rt_median,
-                 nback_corr_rt_median, negaff_cfa, ple_cfa, event_unpleasantness),
+                 nback_corr_rt_median, negaff_cfa, posaff_cfa, ple_cfa, event_unpleasantness, event_pleasantness, ambivalence),
             .funs = list(centered = ~ scale(., scale = F, center = T))) %>% 
   distinct()
 
@@ -417,8 +525,11 @@ dat_cleaned <-
   dat_cleaned %>%
   arrange(id_esm, day, beep) %>%
   group_by(id_esm, day) %>%
-  mutate_at(vars(negaff_cfa_centered,
+  mutate_at(vars(ambivalence_centered, 
+                 negaff_cfa_centered,
+                 posaff_cfa_centered,
                  ple_cfa_centered,
+                 event_pleasantness_centered,
                  event_unpleasantness_centered,
                  gonogo_dprime_centered,
                  nback_dprime_centered,
@@ -440,8 +551,11 @@ dat_cleaned <-
 dat_cleaned <-
   dat_cleaned %>%
   group_by(id_esm) %>%
-  mutate_at(vars(negaff_cfa,
+  mutate_at(vars(ambivalence,
+                 negaff_cfa,
+                 posaff_cfa,
                  ple_cfa,
+                 event_pleasantness,
                  event_unpleasantness,
                  gonogo_dprime,
                  nback_dprime,
@@ -452,32 +566,66 @@ dat_cleaned <-
 
 ```
 
+# calculation of negativity bias / positivity offset 
+
+```{r}
+
+dat_cleaned <- 
+  dat_cleaned %>% 
+  group_by(id_esm) %>%
+  mutate(z_event = 
+           event_pleasantness - (mean(event_pleasantness, na.rm = T)/sd(event_pleasantness, na.rm = T)),
+         
+         z_event_within_group = ifelse(z_event > 1,
+                                 1,
+                                 ifelse(z_event < 1 & z_event > -1,
+                                        0,
+                                        -1))) %>%
+  ungroup() %>% 
+  mutate(gonogo_dprime_grand_centered = as.numeric(scale(gonogo_dprime_mean, center = T, scale = F)),
+         nback_dprime_grand_centered  = as.numeric(scale(nback_dprime_mean, center = T, scale = F)))
+
+
+```
+
+
 # 5: creation of final dataset for modeling
 
 ```{r}
 
 # data for beep models - select model-relevant variables  
 
-model_dat <- 
-  dat_cleaned %>% 
+model_dat <-
+  dat_cleaned %>%
   select(id_esm, edu, gender, age, city, start_date, day, beep,
-         
-    
-          
-         gonogo_dprime, nback_dprime, 
+
+
+
+         gonogo_dprime, nback_dprime,
          event_unpleasantness, event_unpleasantness_centered, 
-         
+         event_pleasantness, event_pleasantness_centered, 
+         z_event_within_group,
+
          gonogo_corr_rt_median_centered, nback_corr_rt_median_centered,
          gonogo_dprime_centered, nback_dprime_centered,
-         
-         negaff_cfa, negaff_cfa_centered,
+         gonogo_dprime_grand_centered,
+         nback_dprime_grand_centered,
+
+         negaff_cfa, negaff_cfa_centered, 
+         posaff_cfa, posaff_cfa_centered,
          ple_cfa, ple_cfa_centered,
+         ambivalence, ambivalence_centered, ambivalence_centered_lag,
+
+         sad, afraid, unrested, irritated, angry,
+         ple_control, ple_strange, ple_thoughts,
+         ple_suspicion, ple_treatment, ple_thougtscontrol,
 
          contains(c("_mean", "_lag")),
-         mss_neg, mss_pos, mss_dis, mzq_refuse_reflection,
+         mss_neg, mss_pos, mss_dis,
+         mzq_refuse_reflection,
          mzq_emotional_awareness, mzq_psychic_equivalence, mzq_regulate_affect, mzq_sum
-         ) %>% 
-  
+         ) %>%
+
 #  filter_at(vars(event_unpleasantness_centered:negaff_centered_lag), all_vars(!is.na(.))) %>%
   distinct() # %>% view()
 
@@ -488,18 +636,17 @@ model_dat <-
 # grand-mean centering of participants' mean drpime scores 
 
 
-# model_dat <- 
+# model_dat <-
 #   model_dat %>%
 #   mutate(gonogo_dprime_grand_centered = scale(gonogo_dprime_mean, center = T, scale = F),
-#          nback_dprime_grand_centered = scale(nback_dprime_mean, center = T, scale = F),
-#          negaff_mean_grand_centered = scale(negaff_mean, center = T, scale = F))
+#          nback_dprime_grand_centered = scale(nback_dprime_mean, center = T, scale = F))
    
 ```
 
 
 ```{r}
 
-write.csv(model_dat, "processed_data/data_processed/alter_model_dat.csv", row.names = F)
+write.csv(model_dat, "data_processed/model_dat.csv", row.names = F)
 
 ```
 
