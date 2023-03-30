@@ -31,12 +31,13 @@ library(ggplot2)
 library(car)
 library(mlVAR)
 library(graphicalVAR)
+library(broom)
+library(performance)
+# library(confintr)
+# library(goft)
 
 ```
 
-
-# todo: facet_wrap arra, hogy személyen belül hogyan korrelál a posaff negaff
-# todo 2: hőtérkép a lehetséges komnnációkkal geom_tile
 
 # import data
 
@@ -52,38 +53,198 @@ model_dat <- read.csv("data_processed/model_dat.csv")
 
 ```
 
-# preparing dataset
+
+It has been suggested that some non-schizophrenic individuals may exhibit PLEs frequently, but in a fashion that is not distressing but life-enhancing (“benign schizotypy”). In schizophrenia and at-risk individuals, however, psychotic symptoms are not only distressing, but also triggered stress.
+
+Results suggest two discrete effects: On the one hand, individuals high in disorganised and negative schizotypy showed stress-dependent increases in PLEs; without added effects of positive schizotypy. On the other, individuals low in negative and disorganised schizotypy showed higher levels of PLEs solely as a function of positive schizotypy but not stress.
+
+We discuss these findings in light of the fully-dimensional model of schizotypy and hypothesize that PLEs in individuals high in schizotypy-facets suggested to convey risk-for-schizophrenia (negative and disorganised) may reflect qualitatively different entities than PLEs in individuals with low values in these facets, but high expressions of positive schizotypy (“happy schizotypes”). Additionally, we emphasize the importance of not overlooking the disorganised schizotypy-facet in related research.
+
+```{r}
+# correlation between trait self report and mean state behavioural measures of cognitive performance
+
+corr_cog <- 
+  model_dat %>% 
+  dplyr::select(id_esm, nback_dprime_grand_centered, gonogo_dprime_grand_centered, mss_dis_score) %>% 
+  distinct()
+
+shapiro.test(corr_cog$nback_dprime_grand_centered)
+shapiro.test(corr_cog$gonogo_dprime_grand_centered)
+shapiro.test(corr_cog$mss_dis_score)
+# normality not assumed
+
+cor.test(corr_cog$mss_dis_score, corr_cog$nback_dprime_grand_centered, method = "spearman")
+cor.test(corr_cog$mss_dis_score, corr_cog$gonogo_dprime_grand_centered, method = "spearman")
+
+# ci_cor(corr_cog, probs = c(0.025, 0.975), method = "spearman", type = "bootstrap", boot_type = "basic")
+# 
+# corr_cog <-
+#   corr_cog %>%
+  # mutate(mss_dis_score_log = log10(mss_dis_score + 2),
+  #        ple_between_log = log10(ple_between + 2))
+
+# ggplot(corr_cog, aes(mss_dis_score_sqrt, nback_dprime_grand_centered)) +
+#   geom_point(alpha = 0.5, position = "jitter") +
+#   geom_smooth(method = "lm", fill = "#8fb9dc", color = "#609CCE") +
+#   theme_classic() +
+#   # labs(x = "Trait rumination",
+#   #      y = "Mean state rumination"
+#   # ) +
+#   theme(axis.title = element_text(size = 12))
+
+# ggplot(corr_cog, aes(mss_dis_score, nback_dprime_grand_centered)) +
+#   geom_point(alpha = 0.5, position = "jitter") +
+#   geom_smooth(method = "lm", fill = "#8fb9dc", color = "#609CCE") +
+#   theme_classic() +
+# 
+#   theme(axis.title = element_text(size = 12))
+```
+
+
 
 ```{r}
 
-model_dat <- 
-  model_dat %>% 
-  mutate(
-    female = 
-      ifelse(
-        grepl("Female", gender),
-        1,
-        0
-      ),
-    male = 
-      ifelse(
-        grepl("Male", gender),
-        1,
-        0
-      ),
-    other = 
-      ifelse(
-        grepl("Other", gender),
-        1,
-        0
-      )
-  ) %>% 
-  mutate(
-    z_event_within_ind = factor(z_event_within_group, levels = c(-1, 0, 1), labels = c("Negative", "Neutral", "Positive")))
-    
-    
-  
+# model_dat <- 
+#   model_dat %>% 
+#   mutate(ple_log = log10(ple_cfa+3),
+#          negaff_log = log10(negaff_cfa+3))
+
 ```
+
+```{r}
+m <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      event_unpleasantness_centered * mss_dis_score  +
+      event_unpleasantness_centered * mss_neg_score  +
+      event_unpleasantness_centered * mss_pos_score  +
+    #  ple_cfa_centered_lag + 
+
+      (event_unpleasantness_centered | id_esm), data = model_dat)
+
+
+tab_model(m)
+plot_model(m, type = "int")
+
+```
+
+
+```{r}
+m_na <- 
+  lmer(
+    negaff_cfa ~ 
+      day + beep + gender + age +
+      event_unpleasantness_centered * mss_dis_score  +
+      event_unpleasantness_centered * mss_pos_score  +
+      event_unpleasantness_centered * mss_neg_score  +
+      (event_unpleasantness_centered| id_esm), data = model_dat)
+
+
+tab_model(m_na)
+plot_model(m_na, type = "int")
+```
+
+
+```{r}
+model_dat %>% 
+  select(id_esm, gender, age, day, beep, event_unpleasantness_centered, ple_cfa, mss_dis, mss_pos, mss_neg) %>% 
+  filter(!is.na(ple_cfa)) %>%
+  select(id_esm, gender, age) %>% 
+  distinct() %>%
+  summarise(table(gender), median(age))
+```
+
+
+
+```{r}
+m <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      # nback_dprime_centered * event_unpleasantness_centered +
+      # nback_dprime_grand_centered  * event_unpleasantness_centered +
+      mss_dis_score * event_unpleasantness_centered +
+      (event_unpleasantness_centered | id_esm), data = model_dat)
+
+
+m0 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      gonogo_dprime_centered * event_unpleasantness_centered +
+      gonogo_dprime_grand_centered * event_unpleasantness_centered +
+      mss_dis_score * event_unpleasantness_centered +
+      (gonogo_dprime_centered + event_unpleasantness_centered | id_esm), data = model_dat)
+
+
+tab_model(m0)
+
+plot_model(m, type = "diag")
+
+```
+
+```{r}
+plot_model(m, show.values = TRUE, value.offset = .3, # type = "std",
+           show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.05, .05)
+
+```
+
+```{r}
+plot_model(m0, show.values = TRUE, value.offset = .3, # type = "std",
+           show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.1, .1)
+
+```
+
+
+
+
+```{r}
+m1 <- 
+  lmer(
+    ple_cfa ~
+      day + beep + gender + age +
+      nback_dprime_centered * negaff_cfa_centered +
+      nback_dprime_grand_centered * negaff_cfa_centered +
+      mss_dis_score  * negaff_cfa_centered +
+      (nback_dprime_centered * negaff_cfa_centered  | id_esm), data = model_dat)
+
+
+m2 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      gonogo_dprime_centered * negaff_cfa_centered +
+      gonogo_dprime_grand_centered  * negaff_cfa_centered +
+      mss_dis_score  * negaff_cfa_centered +
+      (gonogo_dprime_centered * negaff_cfa_centered | id_esm), data = model_dat)
+
+
+tab_model(m1, m2)
+
+plot_model(m1, type = "int")
+plot_model(m2, type = "int")
+```
+
+
+```{r, fig.width=7, fig.height=7}
+check_model(m1)
+```
+
+```{r}
+plot_model(m1, show.values = TRUE, value.offset = .3, # type = "std",
+           show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.1, .1)
+
+```
+
+```{r}
+plot_model(m2, show.values = TRUE, value.offset = .3, # type = "std",
+           show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.1, .1)
+
+```
+
+
+
 
 
 ```{r}
@@ -94,16 +255,14 @@ ambivalence_model <-
       day + beep + gender + age +
       event_unpleasantness_centered * ple_cfa_centered + 
       negaff_cfa + I(negaff_cfa^2) +
-      (event_unpleasantness_centered + ple_cfa_centered | id_esm), data = model_dat)
+      (event_unpleasantness_centered * ple_cfa_centered | id_esm), data = model_dat)
 
-summary(ambivalence_model)
+tab_model(ambivalence_model)
 ```
 
 
 ```{r}
-plot_model(ambivalence_model, type = "pred")
-
-
+plot_model(ambivalence_model, type = "diag")
 ```
 
 ```{r}
@@ -112,7 +271,7 @@ ambivalence_model_trait <-
   lmer(
     ambivalence ~ 
       day + beep + gender + age +
-       event_unpleasantness_centered * mss_dis + negaff_cfa + I(negaff_cfa^2) +
+       event_unpleasantness_centered * mss_dis_score + negaff_cfa + I(negaff_cfa^2) +
       (event_unpleasantness_centered  | id_esm), data = model_dat)
 
 summary(ambivalence_model_trait)
@@ -121,8 +280,6 @@ summary(ambivalence_model_trait)
 
 ```{r}
 plot_model(ambivalence_model_trait, type = "int")
-
-
 ```
 
 ```{r}
@@ -171,156 +328,6 @@ plot_model(offset_model, type = "pred")
 ```
 
 
-```{r}
-# mzq_refuse_reflection, mzq_emotional_awareness, mzq_psychic_equivalence, mzq_regulate_affect, mzq_sum
-
-cont_model <-
-
-  lmer(
-    negaff_cfa ~ 
-      gender + age + day + beep + 
-      ple_cfa_centered * nback_dprime_centered +
-      (ple_cfa_centered * nback_dprime_centered | id_esm), data = model_dat)
-
-
-summary(cont_model)
-
-plot_model(cont_model, type = "int")
-
-
-```
-
-
-```{r}
-# mss_neg, mss_pos, mss_dis
-
-bias_model <-
-
-  lmer(
-    negaff_cfa ~ 
-      day + beep + age + gender +
-      event_unpleasantness_centered * mss_pos  + 
-      (event_unpleasantness_centered | id_esm),
-    data = model_dat) 
-
-summary(bias_model)
-
-plot_model(bias_model, type = "int")
-
-
-```
-
-
-```{r}
-
-offset_model <-
-
-  lmer(
-    posaff_cfa ~ day + beep + 
-      mss_dis * z_event_within_ind + 
-      (z_event_within_ind | id_esm),
-    data = model_dat) #%>% filter(z_event_within_group == 0))
-
-summary(offset_model)
-
-
-plot_model(offset_model, type = "int")
-
-```
-
-
-```{r}
-
-ambi_model <-
-
-  lmer(
-    ambivalence ~ day + beep + age + gender + 
-      event_unpleasantness_centered * mss_dis + 
-      (event_unpleasantness_centered | id_esm),
-    data = model_dat)
-
-summary(ambi_model)
-
-plot_model(ambi_model, type = "int")
-
-
-```
-
-
-```{r, include=F}
-
-m_1 <- 
-  model_dat %>% 
-  lmer(
-    negaff_cfa ~ 
-      day + poly(beep, 2) + 
-      event_unpleasantness_centered * (mss_dis) + event_unpleasantness_mean + (event_unpleasantness_centered | id_esm),
-    data = .
-  )
-
-
-```
-```{r, include=F}
-
-summary(m_1)
-
-```
-```{r, include=F}
-
-model_dat <-
-  model_dat %>%
-  mutate(negaff_cfa_log10 = log10(negaff_cfa + 2))
-
-```
-```{r, include=F}
-# gonogo_dprime_centered
-
-mod_ple_1 <-
-
-  lmer(
-    negaff_cfa_log10 ~ beep + day + age + gender +
-      ple_cfa_centered * gonogo_dprime_centered + negaff_cfa_centered_lag + # + event_unpleasantness_centered + mss_dis +
-      (ple_cfa_centered + negaff_cfa_centered_lag | id_esm ), data = model_dat)
-
-
-summary(mod_ple_1)
-
-```
-```{r, include=F}
-
-plot_model(mod_ple_1, type = "diag")
-
-```
-```{r, include=F}
-
-plot_model(mod_ple_1, type = "int")
-
-```
-```{r, include=F}
-# nback_dprime_centered
-
-mod_ple_2 <-
-
-  lmer(
-    negaff_cfa_log10 ~ beep + day + age + gender +
-      ple_cfa_centered * nback_dprime_centered + negaff_cfa_centered_lag + event_unpleasantness_centered + mss_dis +
-      (ple_cfa_centered + negaff_cfa_centered_lag | id_esm ), data = model_dat)
-
-
-summary(mod_ple_2)
-
-```
-```{r, include=F}
-
-plot_model(mod_ple_2, type = "diag")
-
-```
-```{r, include=F}
-
-plot_model(mod_ple_2, type = "int")
-
-```
-
 ```{r, warning=F}
 
 mediation_model <- '
@@ -335,26 +342,26 @@ mediation_model <- '
               ple_suspicion + ple_treatment + ple_thougtscontrol
 
             # direct effects
-              negaff_within  ~
-              d_w * ple_within +       
+              ple_within  ~
+              d_w * negaff_within +       
               # control variables
-              stress + beep + day
+              beep + day
                 
             # mediator 1
               gonogo_dprime ~  
-              m1_w * ple_within +
+              m1_w * negaff_within +
               # control variables
-              stress + beep + day
+              beep + day
                 
              # mediator 2
               nback_dprime ~  
-              m2_w * ple_within +
+              m2_w * negaff_within +
               # control variables
-              stress + beep + day
+              beep + day
             
             # indirect effects
-              ple_gonog_na_w :=  m1_w * d_w
-              ple_nback_na_w :=  m2_w * d_w
+              na_gonog_ple_w :=  m1_w * d_w
+              na_nback_ple_w :=  m2_w * d_w
              
             # total effects
               total_ple_w :=  
@@ -370,22 +377,22 @@ mediation_model <- '
               ple_suspicion + ple_treatment + ple_thougtscontrol
             
             # direct effects
-              negaff_between  ~
-              d_b * ple_between +       
+              ple_between  ~
+              d_b * negaff_between +       
               # control variables
-              stress + age + gender
+              age + gender
             
             # mediator 1
               gonogo_dprime ~  
-              m1_b * ple_between +
+              m1_b * negaff_between +
               # control variables
-              stress + age + gender
+              age + gender
               
             # mediator 2
               nback_dprime ~  
-              m2_b * ple_between +
+              m2_b * negaff_between +
               # control variables
-              stress + age + gender
+              age + gender
             
             # indirect effects
               ple_gonog_na_b :=  m1_b * d_b
@@ -396,7 +403,7 @@ mediation_model <- '
               d_b + (m1_b * d_b) + (m2_b * d_b)
             '
 
-fit <- sem(model = mediation_model, data = model_dat_mediation, cluster = "id_esm", estimator = "ML")
+fit <- sem(model = mediation_model, data = model_dat, cluster = "id_esm", estimator = "ML")
 
 ```
 
@@ -427,8 +434,12 @@ summary(fit, std = T, fit.measures = T)
 
 ```{r, message=F, warning=F, include=F}
 
-# vars <- 
-#   c("negaff", "gonogo_dprime", "ple", "event_unpleasantness", "homeo_hungry", "coffee", "alcohol")
+vars <- c( "sad", "afraid", "unrested", "irritated", "angry", "ple_control", "ple_strange", "ple_thoughts", "ple_suspicion", "ple_treatment", "ple_thougtscontrol", #"gonogo_dprime", "nback_dprime",
+           "event_unpleasantness")
+
+
+vars <- c("ple_control", "ple_strange", "ple_thoughts", "ple_suspicion", "ple_treatment", "ple_thougtscontrol", "gonogo_dprime", "nback_dprime", "event_unpleasantness")
+
 
 ```
 
@@ -437,33 +448,33 @@ summary(fit, std = T, fit.measures = T)
 
 #, echo=FALSE, message = FALSE, warning=F, include=F}
 
-# res1_corr <- 
-#   mlVAR(
-#     data = model_dat,
-#     vars = vars,
-#     idvar = "id_esm",
-#     dayvar = "day",
-#     beepvar = "beep",
-#     contemporaneous = "correlated",
-#     temporal = "correlated")      
+res1_corr <-
+  mlVAR(
+    data = model_dat,
+    vars = vars,
+    idvar = "id_esm",
+    dayvar = "day",
+    beepvar = "beep",
+    contemporaneous = "correlated",
+    temporal = "correlated")
 
 ```
 
 
-```{r, fig.height=6, fig.width=6, message=F, warning=F, include=F}
+```{r,message=F, warning=F, include=F}
 
-# plot(res1_corr, "temporal", title = "Temporal", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
-
-```
-
-```{r, fig.height=6, fig.width=6, message=F, warning=F, include=F}
-
-# plot(res1_corr, "contemporaneous", title = "Contemporaneous", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+plot(res1_corr, "temporal", title = "Temporal", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
 
 ```
 
-```{r, fig.height=6, fig.width=6, message=F, warning=F, include=F}
+```{r, message=F, warning=F}
 
-# plot(res1_corr, "between", title = "between", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+plot(res1_corr, "contemporaneous", title = "Contemporaneous", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
+
+```
+
+```{r, message=F, warning=F}
+
+plot(res1_corr, "between", title = "between", edge.labels = T, label.scale.equal = T, label.cex = 2.8, nonsig = "hide" , cut = 0.2)
 
 ```

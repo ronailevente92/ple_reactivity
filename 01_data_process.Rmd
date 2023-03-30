@@ -484,6 +484,171 @@ dat_cleaned <-
 
 ```
 
+# cronbach alpha for mss
+
+```{r}
+# positive schizotypy: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38
+mss_pos <- 
+  dat_cleaned %>%
+  select(id_esm, MSS_BH_8, MSS_BH_11, MSS_BH_14, 
+           MSS_BH_23, MSS_BH_32, MSS_BH_20, MSS_BH_26, MSS_BH_29)  %>%  # MSS_BH_5, MSS_BH_2, MSS_BH_38, MSS_BH_17, MSS_BH_35
+  distinct() %>% 
+  select(-id_esm)
+
+# negative schizotypy: 1, 4R, 7, 10R, 13, 16, 19, 22, 25R, 28, 31, 34, 37R
+mss_neg <- 
+  dat_cleaned %>%
+  select(id_esm, MSS_BH_1, MSS_BH_28, MSS_BH_13, MSS_BH_34, MSS_BH_19, MSS_BH_4, MSS_BH_7, MSS_BH_10, MSS_BH_16,
+             MSS_BH_25, MSS_BH_31, MSS_BH_37, MSS_BH_22) %>% 
+  distinct() %>% 
+  select(-id_esm)
+
+# disorganized schizotypy: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36  
+mss_dis <- 
+  dat_cleaned %>%
+  select(id_esm, MSS_BH_3, MSS_BH_6, MSS_BH_9, 
+           MSS_BH_12, MSS_BH_15, MSS_BH_18, 
+           MSS_BH_21, MSS_BH_24, MSS_BH_27, 
+           MSS_BH_30, MSS_BH_36, MSS_BH_33) %>%
+  distinct() %>% 
+  select(-id_esm)
+```
+
+
+```{r}
+psych::alpha(mss_pos, check.keys=TRUE)
+```
+
+```{r}
+psych::alpha(mss_neg, check.keys=TRUE)
+```
+
+
+```{r}
+psych::alpha(mss_dis, check.keys=TRUE)
+```
+
+# CFA for MSS
+
+```{r}
+
+# positive schizotypy: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38
+# affective schizotypy: 1, 28, 13, 19, 34, 
+# social schizotypy: 4R, 7, 10R, 16, 22, 25R, 31, 37R
+
+# negative schizotypy: 1, 4R, 7, 10R, 13, 16, 19, 22, 25R, 28, 31, 34, 37R
+
+
+# disorganized schizotypy: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36
+
+dat_cfa_mss <- 
+  dat_cleaned %>% 
+  dplyr::select(id_esm, contains("MSS_BH")) %>%
+  distinct()
+  
+cfa_mss <- '
+
+
+mss_pos_score =~  MSS_BH_8 +  MSS_BH_11 +  MSS_BH_14  +
+                  MSS_BH_20 + MSS_BH_26 +  MSS_BH_29 +
+                  MSS_BH_23 + MSS_BH_32 + MSS_BH_17 + MSS_BH_35 # +MSS_BH_5 + MSS_BH_38 + MSS_BH_2
+            
+mss_neg_score =~  MSS_BH_19 + MSS_BH_28 + MSS_BH_13 + 
+                  MSS_BH_34 + MSS_BH_1 + MSS_BH_4 + MSS_BH_7 + # MSS_BH_10 + 
+                  MSS_BH_16 + MSS_BH_25 + MSS_BH_31 + MSS_BH_37 + MSS_BH_22
+
+mss_dis_score =~  MSS_BH_3 + MSS_BH_6 + MSS_BH_9 +
+                  MSS_BH_12 + MSS_BH_15 + MSS_BH_18 +
+                  MSS_BH_21 + MSS_BH_24 + MSS_BH_27 +
+                  MSS_BH_30 + MSS_BH_36 + MSS_BH_33 
+            
+            # MSS_BH_10	~~	MSS_BH_25
+            # MSS_BH_28	~~	MSS_BH_13
+            # MSS_BH_32	~~	MSS_BH_7
+            
+'
+
+fit_mss <- cfa(model = cfa_mss, # ordered = T,
+                                ordered = c('MSS_BH_1', 'MSS_BH_2',
+                                            'MSS_BH_3', 'MSS_BH_4',
+                                            'MSS_BH_5', 'MSS_BH_6',
+                                            'MSS_BH_7', 'MSS_BH_8',
+                                            'MSS_BH_9', 'MSS_BH_10',
+                                            'MSS_BH_11', 'MSS_BH_12',
+                                            'MSS_BH_13', 'MSS_BH_14',
+                                            'MSS_BH_15', 'MSS_BH_16',
+                                            'MSS_BH_17', 'MSS_BH_18',
+                                            'MSS_BH_19', 'MSS_BH_20',
+                                            'MSS_BH_21', 'MSS_BH_22',
+                                            'MSS_BH_23', 'MSS_BH_24',
+                                            'MSS_BH_25', 'MSS_BH_26',
+                                            'MSS_BH_27', 'MSS_BH_28',
+                                            'MSS_BH_29', 'MSS_BH_30',
+                                            'MSS_BH_31', 'MSS_BH_32',
+                                            'MSS_BH_33', 'MSS_BH_34',
+                                            'MSS_BH_35', 'MSS_BH_36',
+                                            'MSS_BH_37', 'MSS_BH_38'),
+               data = dat_cfa_mss, std.lv = TRUE, estimator = "WLSMV")
+
+```
+
+```{r}
+fitMeasures(fit_mss, c("chisq", "df", "pvalue", "cfi", "tli",
+                   "rmsea", "srmr"))
+```
+
+```{r}
+modificationindices(fit_mss) %>%
+  select("lhs", "op", "rhs", "mi") %>%
+  arrange(desc(mi)) %>%
+ # head(n = 10) %>%
+  print()
+```
+
+```{r}
+summary(fit_mss, fit.measures = TRUE, standardize = TRUE)
+```
+```{r}
+# reliability of rumination factor (omega)
+(reliability(fit_mss))
+
+# factor loadings
+inspect(fit_mss, what = "std")$lambda
+```
+
+```{r, warning = T}
+# between subject factor score-okat hozzáadni a within subject-ekhez
+
+dat_cfa_mss_scores <-
+  dat_cfa_mss %>%
+  select(id_esm) %>%
+  distinct() %>%
+  cbind(lavPredict(fit_mss, newdata = dat_cfa_mss[2:39]))
+
+# dat_ple_lev_1 <-
+#   dat_cfa_mss %>%
+#   cbind(lavPredict(fit_mss, newdata = cfa_ple[4:11], level = 1L)) %>%
+#   select(-c(ple_control:ple_familiarstrange))
+# 
+# dat_ple <-
+#   dat_ple_lev_1 %>%
+#   left_join(dat_ple_lev_2, by = "id_esm") %>%
+#   mutate(ple_cfa =  ple_within + ple_between)
+
+dat_cleaned <-
+  dat_cleaned %>% 
+  left_join(dat_cfa_mss_scores, by = c("id_esm"))
+
+
+```
+
+```{r}
+
+# positive schizotypy: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38
+# negative schizotypy: 1, 4R, 7, 10R, 13, 16, 19, 22, 25R, 28, 31, 34, 37R
+# disorganized schizotypy: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36
+
+```
 
 ```{r}
 # ambivalence
@@ -525,10 +690,12 @@ dat_cleaned <-
   dat_cleaned %>%
   arrange(id_esm, day, beep) %>%
   group_by(id_esm, day) %>%
-  mutate_at(vars(ambivalence_centered, 
+  mutate_at(vars(negaff_cfa,
+                 ambivalence_centered, 
                  negaff_cfa_centered,
                  posaff_cfa_centered,
                  ple_cfa_centered,
+                 event_unpleasantness,
                  event_pleasantness_centered,
                  event_unpleasantness_centered,
                  gonogo_dprime_centered,
@@ -581,9 +748,20 @@ dat_cleaned <-
                                  ifelse(z_event < 1 & z_event > -1,
                                         0,
                                         -1))) %>%
-  ungroup() %>% 
+  ungroup()
+
+dat_cleaned <- 
+  dat_cleaned %>% 
   mutate(gonogo_dprime_grand_centered = as.numeric(scale(gonogo_dprime_mean, center = T, scale = F)),
-         nback_dprime_grand_centered  = as.numeric(scale(nback_dprime_mean, center = T, scale = F)))
+         nback_dprime_grand_centered  = as.numeric(scale(nback_dprime_mean, center = T, scale = F)),
+         event_unpleasantness_grand_centered  = as.numeric(scale(event_unpleasantness_mean, center = T, scale = F)))
+
+
+dat_cleaned <- 
+  dat_cleaned %>% 
+  mutate(
+    z_event_within_ind = factor(z_event_within_group, levels = c(-1, 0, 1), labels = c("Negative", "Neutral", "Positive")))
+  
 
 
 ```
@@ -603,7 +781,8 @@ model_dat <-
 
          gonogo_dprime, nback_dprime,
          event_unpleasantness, event_unpleasantness_centered, 
-         event_pleasantness, event_pleasantness_centered, 
+         event_pleasantness, event_unpleasantness_lag, event_pleasantness_centered, 
+         event_unpleasantness_grand_centered,
          z_event_within_group,
 
          gonogo_corr_rt_median_centered, nback_corr_rt_median_centered,
@@ -611,9 +790,9 @@ model_dat <-
          gonogo_dprime_grand_centered,
          nback_dprime_grand_centered,
 
-         negaff_cfa, negaff_cfa_centered, 
+         negaff_cfa_lag, negaff_cfa_centered, negaff_cfa, negaff_between,
          posaff_cfa, posaff_cfa_centered,
-         ple_cfa, ple_cfa_centered,
+         ple_cfa, ple_cfa_centered, ple_between, 
          ambivalence, ambivalence_centered, ambivalence_centered_lag,
 
          sad, afraid, unrested, irritated, angry,
@@ -621,7 +800,10 @@ model_dat <-
          ple_suspicion, ple_treatment, ple_thougtscontrol,
 
          contains(c("_mean", "_lag")),
-         mss_neg, mss_pos, mss_dis,
+         mss_dis, mss_pos, mss_neg, 
+         mss_dis_score, mss_pos_score, 
+         mss_neg_score, 
+         #mss_aff_score, mss_soc_score
          mzq_refuse_reflection,
          mzq_emotional_awareness, mzq_psychic_equivalence, mzq_regulate_affect, mzq_sum
          ) %>%
@@ -630,19 +812,6 @@ model_dat <-
   distinct() # %>% view()
 
 ```
-
-```{r}
-
-# grand-mean centering of participants' mean drpime scores 
-
-
-# model_dat <-
-#   model_dat %>%
-#   mutate(gonogo_dprime_grand_centered = scale(gonogo_dprime_mean, center = T, scale = F),
-#          nback_dprime_grand_centered = scale(nback_dprime_mean, center = T, scale = F))
-   
-```
-
 
 ```{r}
 
