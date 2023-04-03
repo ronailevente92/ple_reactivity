@@ -405,22 +405,23 @@ cfa_ple_syntax <- '
 
   level: 1
 
-      ple_within   =~    ple_control + ple_strange + ple_thoughts + 
-                         ple_suspicion + ple_treatment +
-                         ple_thougtscontrol
+      ple_within   =~    ple_control + ple_strange + ple_thoughts + ple_suspicion +
+                         ple_treatment + ple_perception + ple_thougtscontrol + ple_familiarstrange
+                         
+                         ple_perception	~~	ple_familiarstrange
+                         ple_thoughts	~~	ple_familiarstrange
 
 
   level: 2
 
-      ple_between   =~   ple_control + ple_strange + ple_thoughts + 
-                         ple_suspicion + ple_treatment + 
-                         ple_thougtscontrol
+      ple_between   =~   ple_control + ple_strange + ple_thoughts + ple_suspicion +
+                         ple_treatment + ple_perception + ple_thougtscontrol + ple_familiarstrange
                          
-                         ple_control	~~	ple_strange
+                        ple_control	~~	ple_strange
 
 '
 
-fit_ple <- cfa(model = cfa_ple_syntax, data = cfa_ple, cluster = "id_esm", std.lv = TRUE, estimator = "ML")
+fit_ple <- cfa(model = cfa_ple_syntax, data = cfa_ple, cluster = "id_esm", std.lv = TRUE, estimator = "MLR")
 
 ```
 
@@ -435,12 +436,12 @@ fitMeasures(fit_ple, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_wit
 summary(fit_ple, fit.measures = TRUE, standardize = TRUE)
 
 
-# modificationindices(fit_ple) %>%
-#   select("lhs", "op", "rhs", "level", "mi") %>%
-#   filter(mi > 11) %>%
-#   arrange(desc(mi)) %>%
-#   head(n = 10) %>%
-#   print()
+modificationindices(fit_ple) %>%
+  select("lhs", "op", "rhs", "level", "mi") %>%
+  filter(mi > 11) %>%
+  arrange(desc(mi)) %>%
+  head(n = 10) %>%
+  print()
 
 ```
 
