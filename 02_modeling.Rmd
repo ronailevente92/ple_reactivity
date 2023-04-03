@@ -112,37 +112,76 @@ cor.test(corr_cog$mss_dis_score, corr_cog$gonogo_dprime_grand_centered, method =
 ```
 
 ```{r}
-m <- 
+m1 <- 
   lmer(
     ple_cfa ~ 
       day + beep + gender + age +
-      event_unpleasantness_centered * mss_dis_score  +
       event_unpleasantness_centered * mss_neg_score  +
       event_unpleasantness_centered * mss_pos_score  +
+     # event_unpleasantness_centered * mss_dis_score  +
+
     #  ple_cfa_centered_lag + 
 
       (event_unpleasantness_centered | id_esm), data = model_dat)
 
 
-tab_model(m)
-plot_model(m, type = "int")
+tab_model(m1, show.aicc = T)
+plot_model(m1, type = "int")
+```
+
+
+```{r}
+m2 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      event_unpleasantness_centered * mss_neg_score  +
+      event_unpleasantness_centered * mss_pos_score  +
+      event_unpleasantness_centered * mss_dis_score  +
+
+#      ple_cfa_centered_lag + 
+
+      (event_unpleasantness_centered | id_esm), data = model_dat)
+
+
+tab_model(m2, show.aicc = T)
+plot_model(m2, type = "int")
+```
+
+
+```{r}
+m3 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      event_unpleasantness_centered * mss_neg_score  +
+      event_unpleasantness_centered * mss_pos_score  +
+      event_unpleasantness_centered * mss_dis_score  +
+
+      ple_cfa_centered_lag + 
+
+      (event_unpleasantness_centered + ple_cfa_centered_lag | id_esm), data = model_dat)
+
+
+tab_model(m3, show.aicc = T)
+plot_model(m3, type = "int")
 
 ```
 
 
 ```{r}
-m_na <- 
-  lmer(
-    negaff_cfa ~ 
-      day + beep + gender + age +
-      event_unpleasantness_centered * mss_dis_score  +
-      event_unpleasantness_centered * mss_pos_score  +
-      event_unpleasantness_centered * mss_neg_score  +
-      (event_unpleasantness_centered| id_esm), data = model_dat)
-
-
-tab_model(m_na)
-plot_model(m_na, type = "int")
+# m_na <- 
+#   lmer(
+#     negaff_cfa ~ 
+#       day + beep + gender + age +
+#       event_unpleasantness_centered * mss_dis_score  +
+#       event_unpleasantness_centered * mss_pos_score  +
+#       event_unpleasantness_centered * mss_neg_score  +
+#       (event_unpleasantness_centered| id_esm), data = model_dat)
+# 
+# 
+# tab_model(m_na)
+# plot_model(m_na, type = "int")
 ```
 
 
@@ -197,8 +236,6 @@ plot_model(m0, show.values = TRUE, value.offset = .3, # type = "std",
 ```
 
 
-
-
 ```{r}
 m1 <- 
   lmer(
@@ -242,10 +279,6 @@ plot_model(m2, show.values = TRUE, value.offset = .3, # type = "std",
            show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.1, .1)
 
 ```
-
-
-
-
 
 ```{r}
 ambivalence_model <-
