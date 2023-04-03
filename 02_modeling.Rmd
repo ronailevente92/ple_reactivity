@@ -125,7 +125,7 @@ m1 <-
       (event_unpleasantness_centered | id_esm), data = model_dat)
 
 
-tab_model(m1, show.aicc = T)
+tab_model(m1, show.aicc = T, show.std = T)
 plot_model(m1, type = "int")
 ```
 
@@ -144,7 +144,7 @@ m2 <-
       (event_unpleasantness_centered | id_esm), data = model_dat)
 
 
-tab_model(m2, show.aicc = T)
+tab_model(m2, show.aicc = T, show.std = T)
 plot_model(m2, type = "int")
 ```
 
@@ -163,11 +163,17 @@ m3 <-
       (event_unpleasantness_centered + ple_cfa_centered_lag | id_esm), data = model_dat)
 
 
-tab_model(m3, show.aicc = T)
+tab_model(m3, show.aicc = T, show.std = T)
 plot_model(m3, type = "int")
 
 ```
 
+
+```{r}
+plot_model(m3, show.values = TRUE, value.offset = .3, # type = "std",
+           show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.4, .4)
+
+```
 
 ```{r}
 # m_na <- 
@@ -223,11 +229,7 @@ plot_model(m, type = "diag")
 
 ```
 
-```{r}
-plot_model(m, show.values = TRUE, value.offset = .3, # type = "std",
-           show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.05, .05)
 
-```
 
 ```{r}
 plot_model(m0, show.values = TRUE, value.offset = .3, # type = "std",

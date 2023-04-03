@@ -484,22 +484,24 @@ dat_cleaned <-
 
 ```
 
-# cronbach alpha for mss
+# cronbach alpha for mss (exclude #10 and #5 due to negative variances)
 
 ```{r}
 # positive schizotypy: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38
 mss_pos <- 
   dat_cleaned %>%
   select(id_esm, MSS_BH_8, MSS_BH_11, MSS_BH_14, 
-           MSS_BH_23, MSS_BH_32, MSS_BH_20, MSS_BH_26, MSS_BH_29)  %>%  # MSS_BH_5, MSS_BH_2, MSS_BH_38, MSS_BH_17, MSS_BH_35
+           MSS_BH_23, MSS_BH_32, MSS_BH_20, MSS_BH_26, MSS_BH_29, MSS_BH_2, MSS_BH_38, MSS_BH_17, MSS_BH_35) %>% 
+  # MSS_BH_5
   distinct() %>% 
   select(-id_esm)
 
 # negative schizotypy: 1, 4R, 7, 10R, 13, 16, 19, 22, 25R, 28, 31, 34, 37R
 mss_neg <- 
   dat_cleaned %>%
-  select(id_esm, MSS_BH_1, MSS_BH_28, MSS_BH_13, MSS_BH_34, MSS_BH_19, MSS_BH_4, MSS_BH_7, MSS_BH_10, MSS_BH_16,
+  select(id_esm, MSS_BH_1, MSS_BH_28, MSS_BH_13, MSS_BH_34, MSS_BH_19, MSS_BH_4, MSS_BH_7, MSS_BH_16,
              MSS_BH_25, MSS_BH_31, MSS_BH_37, MSS_BH_22) %>% 
+  # MSS_BH_10
   distinct() %>% 
   select(-id_esm)
 
@@ -551,7 +553,7 @@ cfa_mss <- '
 
 mss_pos_score =~  MSS_BH_8 +  MSS_BH_11 +  MSS_BH_14  +
                   MSS_BH_20 + MSS_BH_26 +  MSS_BH_29 +
-                  MSS_BH_23 + MSS_BH_32 + MSS_BH_17 + MSS_BH_35 # +MSS_BH_5 + MSS_BH_38 + MSS_BH_2
+                  MSS_BH_23 + MSS_BH_32 + MSS_BH_17 + MSS_BH_35 + MSS_BH_38 + MSS_BH_2  # +MSS_BH_5
             
 mss_neg_score =~  MSS_BH_19 + MSS_BH_28 + MSS_BH_13 + 
                   MSS_BH_34 + MSS_BH_1 + MSS_BH_4 + MSS_BH_7 + # MSS_BH_10 + 
@@ -561,11 +563,6 @@ mss_dis_score =~  MSS_BH_3 + MSS_BH_6 + MSS_BH_9 +
                   MSS_BH_12 + MSS_BH_15 + MSS_BH_18 +
                   MSS_BH_21 + MSS_BH_24 + MSS_BH_27 +
                   MSS_BH_30 + MSS_BH_36 + MSS_BH_33 
-            
-            # MSS_BH_10	~~	MSS_BH_25
-            # MSS_BH_28	~~	MSS_BH_13
-            # MSS_BH_32	~~	MSS_BH_7
-            
 '
 
 fit_mss <- cfa(model = cfa_mss, # ordered = T,
@@ -606,8 +603,12 @@ modificationindices(fit_mss) %>%
 ```
 
 ```{r}
+
 summary(fit_mss, fit.measures = TRUE, standardize = TRUE)
+
 ```
+
+
 ```{r}
 # reliability of rumination factor (omega)
 (reliability(fit_mss))
