@@ -111,6 +111,8 @@ cor.test(corr_cog$mss_dis_score, corr_cog$gonogo_dprime_grand_centered, method =
 
 ```
 
+## Psychotic reactivity
+
 ```{r}
 m1 <- 
   lmer(
@@ -291,6 +293,69 @@ plot_model(m2, show.values = TRUE, value.offset = .3, # type = "std",
            show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.1, .1)
 
 ```
+
+## Affect dynamics and schizotypy 
+
+### Positive and negative schizotypy
+
+```{r}
+affdyn_pos_neg <- 
+  model_dat %>%   
+  lmer(
+    negaff_cfa ~ 
+      day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_pos_score + mss_neg_score) +  
+      (ple_cfa_centered | id_esm), 
+    data = .)
+
+
+tab_model(affdyn_pos_neg, show.aicc = T, show.std = T)
+plot_model(affdyn_pos_neg, type = "int")
+
+```
+
+### Disorg schizotypy
+
+```{r}
+affdyn_dis <- 
+  model_dat %>%   
+  lmer(
+    negaff_cfa ~ 
+      day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_dis_score) +  
+      (ple_cfa_centered | id_esm), 
+    data = .)
+
+
+tab_model(affdyn_dis, show.aicc = T, show.std = T)
+plot_model(affdyn_dis, type = "int")
+
+```
+
+### Positive and negative and disorg schizotypy
+
+```{r}
+affdyn_pos_neg_dis <- 
+  model_dat %>%   
+  lmer(
+    negaff_cfa ~ 
+      day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_dis_score + mss_pos_score + mss_neg_score) +  
+      (ple_cfa_centered | id_esm), 
+    data = .)
+
+
+tab_model(affdyn_pos_neg_dis, show.aicc = T, show.std = T)
+plot_model(affdyn_pos_neg_dis, type = "int")
+
+```
+
+- positive and disorganised schizotypy predict higher negative affect
+- negative scht predicts lower negative affect if disorg is controlled for
+- positive and negative schizotypy both independently predict stronger negative affective inertia
+- without adjusting for positive and negative schizotypy, disorg shows the same effect
+- however, when all schizotypy dimensions are entered, disorg predicts reduced inertia
+  - inspecting the plots suggests that pos and negative schizotypy held constant, high disorganisation predicts a high negative affect, even when preceding negative affect was low (in high disorganisation, mood tends to go to negative, no matter what happened before), which effectively reduces autocorrelation
+
+
+## Ambivalence
 
 ```{r}
 ambivalence_model <-
