@@ -133,11 +133,11 @@ mod_wm_scht <-
   model_dat %>% 
   lmer(
     nback_dprime ~
-      poly(day,3 ) + poly(beep, 2) +
+      poly(day,3 ) + 
+      # poly(beep, 2) +
       age + 
       gender *
-      # (mss_dis_score + mss_pos_score + mss_neg_score) +
-            (mss_pos_score ) +
+      (mss_dis_score + mss_pos_score + mss_neg_score) +
       (1 | id_esm), 
     data = . 
   )
@@ -154,7 +154,8 @@ mod_inh_scht <-
     gonogo_dprime ~
       poly(day, 3) + poly(beep, 2) +
       # day and beep seem to have nonlinear effects
-      age + gender *
+      age + 
+      gender *
       (mss_dis_score + mss_pos_score + mss_neg_score) + 
       (1 | id_esm), 
     data = . 
@@ -162,10 +163,6 @@ mod_inh_scht <-
 
 summary(mod_inh_scht)
 ```
-```{r}
-summary(model_dat$ple_cfa)
-```
-
 ### Links with PLE
 
 ```{r}
@@ -173,7 +170,7 @@ mod_ple_wm_inh <-
   model_dat %>% 
     lmer(
       ple_cfa ~  
-        day + beep +
+        poly(day, 3) + poly(beep, 2) +
         age + 
         gonogo_dprime_centered + gonogo_dprime_grand_centered + 
         nback_dprime_centered + nback_dprime_grand_centered +
@@ -185,9 +182,6 @@ summary(mod_ple_wm_inh)
 
 ```
 
-```{r}
-plot_model(mod_ple_wm_inh, type = "diag")
-```
 
 
 ```{r}
