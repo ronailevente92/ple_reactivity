@@ -60,6 +60,34 @@ Results suggest two discrete effects: On the one hand, individuals high in disor
 
 We discuss these findings in light of the fully-dimensional model of schizotypy and hypothesize that PLEs in individuals high in schizotypy-facets suggested to convey risk-for-schizophrenia (negative and disorganised) may reflect qualitatively different entities than PLEs in individuals with low values in these facets, but high expressions of positive schizotypy (“happy schizotypes”). Additionally, we emphasize the importance of not overlooking the disorganised schizotypy-facet in related research.
 
+## Working memory and response inhibition
+
+```{r}
+model_dat %>% 
+  pivot_longer(names_to = "cog_task", cols = c(nback_dprime, gonogo_dprime), values_to = "dprime" ) %>% 
+  group_by(day, id_esm, cog_task) %>% 
+  summarise(dprime = mean(dprime, na.rm = T)) %>%   
+  ggplot(aes(day, dprime)) + 
+  geom_jitter(aes(color = cog_task), alpha = .3) + 
+  geom_line(aes(group = id_esm), alpha = .2) + 
+  geom_smooth() + 
+  lims(x = c(1, 20)) + 
+  facet_wrap(~cog_task)
+```
+```{r}
+model_dat %>% 
+  pivot_longer(names_to = "cog_task", cols = c(nback_dprime, gonogo_dprime), values_to = "dprime" ) %>% 
+  group_by(beep, id_esm, cog_task) %>% 
+  summarise(dprime = median(dprime, na.rm = TRUE)) %>% 
+  ggplot(aes(beep, dprime)) + 
+  geom_line(aes(group = id_esm), alpha = .2) + 
+  geom_jitter(aes(color = cog_task), alpha = .2) + 
+  stat_summary(fun = "median", geom = "line") +
+  facet_wrap(~cog_task)
+```
+
+### Links with schizotypy
+
 ```{r}
 # correlation between trait self report and mean state behavioural measures of cognitive performance
 
@@ -100,6 +128,60 @@ cor.test(corr_cog$mss_dis_score, corr_cog$gonogo_dprime_grand_centered, method =
 #   theme(axis.title = element_text(size = 12))
 ```
 
+```{r}
+mod_wm_scht <- 
+  model_dat %>% 
+  lmer(
+    nback_dprime ~
+      poly(day,3 ) + 
+      # poly(beep, 2) +
+      age + 
+      gender *
+      (mss_dis_score + mss_pos_score + mss_neg_score) +
+      (1 | id_esm), 
+    data = . 
+  )
+
+summary(mod_wm_scht)
+# plot_model(mod_wm_scht, type = "int")
+```
+
+
+```{r}
+mod_inh_scht <- 
+  model_dat %>% 
+  lmer(
+    gonogo_dprime ~
+      poly(day, 3) + poly(beep, 2) +
+      # day and beep seem to have nonlinear effects
+      age + 
+      gender *
+      (mss_dis_score + mss_pos_score + mss_neg_score) + 
+      (1 | id_esm), 
+    data = . 
+  )
+
+summary(mod_inh_scht)
+```
+### Links with PLE
+
+```{r}
+mod_ple_wm_inh <- 
+  model_dat %>% 
+    lmer(
+      ple_cfa ~  
+        poly(day, 3) + poly(beep, 2) +
+        age + 
+        gonogo_dprime_centered + gonogo_dprime_grand_centered + 
+        nback_dprime_centered + nback_dprime_grand_centered +
+    ( gonogo_dprime_centered | id_esm),
+    data = .
+    )
+
+summary(mod_ple_wm_inh)
+
+```
+
 
 
 ```{r}
@@ -111,6 +193,8 @@ cor.test(corr_cog$mss_dis_score, corr_cog$gonogo_dprime_grand_centered, method =
 #          event_unpleasantness_centered_log10 = log10(event_unpleasantness_centered+4))
 
 ```
+
+## Psychotic reactivity
 
 ```{r}
 m0 <- 
@@ -332,6 +416,69 @@ plot_model(m2, show.values = TRUE, value.offset = .3, # type = "std",
            show.p = TRUE, value.size = 3, line.size = 0.5, dot.size = 1, digits = 3) + ylim(-.1, .1)
 
 ```
+
+## Affect dynamics and schizotypy 
+
+### Positive and negative schizotypy
+
+```{r}
+affdyn_pos_neg <- 
+  model_dat %>%   
+  lmer(
+    negaff_cfa ~ 
+      day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_pos_score + mss_neg_score) +  
+      (ple_cfa_centered | id_esm), 
+    data = .)
+
+
+tab_model(affdyn_pos_neg, show.aicc = T, show.std = T)
+plot_model(affdyn_pos_neg, type = "int")
+
+```
+
+### Disorg schizotypy
+
+```{r}
+affdyn_dis <- 
+  model_dat %>%   
+  lmer(
+    negaff_cfa ~ 
+      day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_dis_score) +  
+      (ple_cfa_centered | id_esm), 
+    data = .)
+
+
+tab_model(affdyn_dis, show.aicc = T, show.std = T)
+plot_model(affdyn_dis, type = "int")
+
+```
+
+### Positive and negative and disorg schizotypy
+
+```{r}
+affdyn_pos_neg_dis <- 
+  model_dat %>%   
+  lmer(
+    negaff_cfa ~ 
+      day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_dis_score + mss_pos_score + mss_neg_score) +  
+      (ple_cfa_centered | id_esm), 
+    data = .)
+
+
+tab_model(affdyn_pos_neg_dis, show.aicc = T, show.std = T)
+plot_model(affdyn_pos_neg_dis, type = "int")
+
+```
+
+- positive and disorganised schizotypy predict higher negative affect
+- negative scht predicts lower negative affect if disorg is controlled for
+- positive and negative schizotypy both independently predict stronger negative affective inertia
+- without adjusting for positive and negative schizotypy, disorg shows the same effect
+- however, when all schizotypy dimensions are entered, disorg predicts reduced inertia
+  - inspecting the plots suggests that pos and negative schizotypy held constant, high disorganisation predicts a high negative affect, even when preceding negative affect was low (in high disorganisation, mood tends to go to negative, no matter what happened before), which effectively reduces autocorrelation
+
+
+## Ambivalence
 
 ```{r}
 ambivalence_model <-
