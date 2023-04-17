@@ -53,6 +53,27 @@ model_dat <- read.csv("data_processed/model_dat.csv")
 
 ```
 
+```{r}
+
+cucc <- 
+model_dat %>% 
+  filter(!is.na(ple_cfa_centered_lag)) %>% 
+  lmer(ple_cfa ~ 
+       age + gender + poly(beep, 2) + poly(day, 2) + 
+       poly(ple_cfa_centered_lag, 1) * (mss_pos_score) + # + mss_dis_score + mss_neg_score) +  # + + mss_dis_score
+       (poly(ple_cfa_centered_lag, 1) | id_esm), data = .) 
+
+summary(cucc)
+
+
+```
+
+```{r}
+
+plot_model(cucc, type = "int")
+
+```
+
 
 It has been suggested that some non-schizophrenic individuals may exhibit PLEs frequently, but in a fashion that is not distressing but life-enhancing (“benign schizotypy”). In schizophrenia and at-risk individuals, however, psychotic symptoms are not only distressing, but also triggered stress.
 
@@ -173,8 +194,8 @@ mod_ple_wm_inh <-
         poly(day, 3) + poly(beep, 2) +
         age + 
         gonogo_dprime_centered + gonogo_dprime_grand_centered + 
-        nback_dprime_centered + nback_dprime_grand_centered +
-    ( gonogo_dprime_centered | id_esm),
+        nback_dprime_centered + nback_dprime_grand_centered + 
+    (gonogo_dprime_centered + nback_dprime_centered | id_esm),
     data = .
     )
 
@@ -206,7 +227,7 @@ m0 <-
 
 
 tab_model(m0, show.aicc = T, show.std = T)
-plot_model(m0, type = "int")
+# plot_model(m0, type = "int")
 
 saveRDS(m0, "models/m0.rds")
 
@@ -285,11 +306,12 @@ tab_model(m2, m3, show.aicc = T, show.std = T)
 
 ```
 
+### visualization
+
 ```{r}
-AIC(m0, m1, m2, m3)
-BIC(m0, m1, m2, m3)
 
 ```
+
 
 
 ```{r}
@@ -427,7 +449,7 @@ affdyn_pos_neg <-
   lmer(
     negaff_cfa ~ 
       day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_pos_score + mss_neg_score) +  
-      (ple_cfa_centered | id_esm), 
+      (negaff_cfa_centered_lag | id_esm), 
     data = .)
 
 
@@ -444,7 +466,7 @@ affdyn_dis <-
   lmer(
     negaff_cfa ~ 
       day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_dis_score) +  
-      (ple_cfa_centered | id_esm), 
+      (negaff_cfa_centered_lag | id_esm), 
     data = .)
 
 
@@ -461,7 +483,7 @@ affdyn_pos_neg_dis <-
   lmer(
     negaff_cfa ~ 
       day + beep + gender + age + (negaff_cfa_centered_lag) * (mss_dis_score + mss_pos_score + mss_neg_score) +  
-      (ple_cfa_centered | id_esm), 
+      (negaff_cfa_centered_lag | id_esm), 
     data = .)
 
 
