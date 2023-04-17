@@ -1,5 +1,5 @@
 ---
-title: "levente_data_process"
+title: "02_modeling"
 author: "Levente Ronai"
 output: html_document
   html_document:
@@ -104,12 +104,30 @@ cor.test(corr_cog$mss_dis_score, corr_cog$gonogo_dprime_grand_centered, method =
 
 ```{r}
 
-# model_dat <- 
-#   model_dat %>% 
+# model_dat <-
+#   model_dat %>%
 #   mutate(ple_log = log10(ple_cfa+3),
-#          negaff_log = log10(negaff_cfa+3))
+#          negaff_log = log10(negaff_cfa+3),
+#          event_unpleasantness_centered_log10 = log10(event_unpleasantness_centered+4))
 
 ```
+
+```{r}
+m0 <- 
+  lmer(
+     ple_cfa ~ 
+      day + beep + gender + age +
+      event_unpleasantness_centered + 
+      (event_unpleasantness_centered | id_esm), data = model_dat)
+
+
+tab_model(m0, show.aicc = T, show.std = T)
+plot_model(m0, type = "int")
+
+saveRDS(m0, "models/m0.rds")
+
+```
+
 
 ```{r}
 m1 <- 
@@ -127,6 +145,9 @@ m1 <-
 
 tab_model(m1, show.aicc = T, show.std = T)
 plot_model(m1, type = "int")
+
+saveRDS(m1, "models/m1.rds")
+
 ```
 
 
@@ -145,7 +166,11 @@ m2 <-
 
 
 tab_model(m2, show.aicc = T, show.std = T)
-plot_model(m2, type = "int")
+
+plot_model(m2, type = "diag")
+
+saveRDS(m2, "models/m2.rds")
+
 ```
 
 
@@ -165,7 +190,23 @@ m3 <-
 tab_model(m3, show.aicc = T, show.std = T)
 plot_model(m3, type = "int")
 
+saveRDS(m3, "models/m3.rds")
+
+
 ```
+
+```{r}
+tab_model(m0, m1, show.aicc = T, show.std = T)
+tab_model(m2, m3, show.aicc = T, show.std = T)
+
+```
+
+```{r}
+AIC(m0, m1, m2, m3)
+BIC(m0, m1, m2, m3)
+
+```
+
 
 ```{r}
 plot_model(m1, show.values = TRUE, value.offset = .3, type = "std",

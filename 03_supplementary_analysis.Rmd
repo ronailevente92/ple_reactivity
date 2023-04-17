@@ -1,0 +1,335 @@
+---
+title: "03_supplementary_analysis"
+author: "Levente Ronai"
+output: html_document
+  html_document:
+   theme: spacelab
+   code_download: true
+   toc: true
+   toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+# loading packages
+
+```{r}
+library(tidyverse)
+library(sjPlot)
+library(lme4)
+library(psych)
+library(matrixStats)
+library(performance)
+library(lmerTest)
+library(nortest)
+library(extrafont)
+library(car)
+library(showtext)
+library(lmeresampler)
+library(patchwork)
+
+
+
+options(scipen = 999)
+```
+
+# reading saved models and data
+
+```{r}
+
+model_dat <- read.csv("data_processed/model_dat.csv")
+
+
+m0 <- readRDS("models/m0.rds")
+m1 <- readRDS("models/m1.rds")
+m2 <- readRDS("models/m2.rds")
+m3 <- readRDS("models/m3.rds")
+
+```
+
+```{r}
+
+tab_model(m0, m1, show.aicc = T, show.std = T)
+tab_model(m2, m3, show.aicc = T, show.std = T)
+
+```
+
+```{r}
+
+AIC(m0, m1, m2, m3)
+BIC(m0, m1, m2, m3)
+
+```
+
+# assumptions for m2
+```{r paged.print=FALSE}
+
+check_collinearity(m2)
+
+plot_model(m2, type = "diag")
+
+# normality test for residuals
+m2_residuals <- residuals(m2)
+lillie.test(m2_residuals)
+
+# normality test for crtiteria
+lillie.test(model_dat$ple_cfa)
+```
+
+# assumptions for m3
+```{r paged.print=FALSE}
+
+check_collinearity(m3)
+# check_model(baseline_model)
+plot_model(m3, type = "diag")
+
+# normality test for residuals
+m3_residuals <- residuals(m3)
+lillie.test(m3_residuals)
+
+```
+
+# bootstrapping
+
+```{r}
+
+# cases_boot_m2 <-
+#   bootstrap(
+#     m2,
+#     .f = fixef,
+#     type = "case",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# 
+# saveRDS(cases_boot_m2, "models/cases_boot_m2.rds")
+# 
+# 
+# cases_boot_m3 <-
+#   bootstrap(
+#     m3,
+#     .f = fixef,
+#     type = "case",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# 
+# saveRDS(cases_boot_m3, "models/cases_boot_m3.rds")
+
+```
+
+# reading bootstrap file and extracting results into a list
+
+```{r}
+cases_boot_m2 <- readRDS("models/cases_boot_m2.rds")
+cases_boot_m3 <- readRDS("models/cases_boot_m3.rds")
+
+
+list_case_m2 <- 
+  list(cases_boot_m2)
+
+list_case_m3 <- 
+  list(cases_boot_m3)
+```
+
+# extracting bootstrapped coefficients
+
+```{r paged.print=TRUE}
+
+ci_boot_m2 <-
+  list_case_m2 %>%
+  map(confint, type = "norm")
+
+(ci_boot_m2)
+
+ci_boot_m3 <-
+  list_case_m3 %>%
+  map(confint, type = "norm")
+
+(ci_boot_m3)
+
+```
+
+# visualizing bootstrap results
+
+## main effects (prediction of PLE)
+### Model 2
+
+```{r echo=TRUE}
+# extracting results into a tibble
+boot_dat_mod_2_main <- 
+  list_case_m2 %>% 
+  map("replicates") %>%
+  
+map(
+    ~tibble(
+      perceived_distress = na.omit(.x$event_unpleasantness_centered),
+      pos_sch = na.omit(.x$mss_pos_score),
+      neg_sch = na.omit(.x$mss_neg_score),
+      dis_sch = na.omit(.x$mss_dis_score)
+    )
+  ) %>%
+  bind_rows()
+
+
+# rearranging tibble format
+boot_dat_mod_2_main_long <- 
+  boot_dat_mod_2_main %>% 
+  pivot_longer(c(perceived_distress, pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+
+
+# plotting
+plot_m2_main <- 
+  boot_dat_mod_2_main_long %>% 
+  ggplot(aes(value, fill = predictor)) +
+     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
+     geom_density(alpha = .5, color = NA, show.legend = FALSE) +
+     labs(
+       x  = "Prediction of PLEs in Model 2",
+       y = "Density",
+       fill = "",
+       title = "Bootstrapped estimates of main and interaction effects",
+       ) +
+     # scale_fill_manual(values = c("#FF9500", "#219C19", "#609CCE", "pink"),
+     #                  labels = c("disorganizated sch",  "negative sch",  "perceived distress", "positive sch")) + 
+  theme_classic()
+
+plot_m2_main
+```
+
+### Model 3
+
+```{r echo=TRUE}
+# extracting results into a tibble
+boot_dat_mod_3_main <- 
+  list_case_m3 %>% 
+  map("replicates") %>%
+  
+map(
+    ~tibble(
+      lagged_PLEs = na.omit(.x$ple_cfa_centered_lag),
+      perceived_distress = na.omit(.x$event_unpleasantness_centered),
+      pos_sch = na.omit(.x$mss_pos_score),
+      neg_sch = na.omit(.x$mss_neg_score),
+      dis_sch = na.omit(.x$mss_dis_score)
+    )
+  ) %>%
+  bind_rows()
+
+
+# rearranging tibble format
+boot_dat_mod_3_main_long <- 
+  boot_dat_mod_3_main %>% 
+  pivot_longer(c(lagged_PLEs, perceived_distress, pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+
+
+# plotting
+plot_m3_main <- 
+  boot_dat_mod_3_main_long %>% 
+  ggplot(aes(value, fill = predictor)) +
+     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
+     geom_density(alpha = .5, color = NA) +
+     labs(
+       x    = "Prediction of PLEs in Model 3",
+       y = "",
+       fill = "",
+       title    = ""
+       ) +
+  theme_classic()
+
+plot_m3_main
+```
+## interactions (moderation of PLE reactivity)
+### Model 2
+
+```{r echo=TRUE}
+
+# extracting results into a tibble
+boot_dat_mod_2_inter <- 
+  list_case_m2 %>% 
+  map("replicates") %>% 
+  map(
+    ~tibble(
+      mss_neg = na.omit(.x$"event_unpleasantness_centered:mss_neg_score"),
+      mss_pos = na.omit(.x$"event_unpleasantness_centered:mss_pos_score"),
+      mss_dis = na.omit(.x$"event_unpleasantness_centered:mss_dis_score")
+    )
+  ) %>%
+  bind_rows()
+
+
+# rearranging tibble format
+boot_dat_mod_2_inter_long <- 
+  boot_dat_mod_2_inter %>% 
+  pivot_longer(c(mss_neg, mss_pos, mss_dis), names_to = "sch_traits", values_to = "value")
+
+
+# plotting
+plot_m2_inter <- 
+  boot_dat_mod_2_inter_long %>% 
+  ggplot(aes(value, fill = sch_traits)) +
+     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
+     geom_density(alpha = .5, color = NA, show.legend = FALSE) +
+     labs(
+       x    = "Prediction of PLE REACTIVITY in Model 2",
+       y = "Density",
+       fill = "",
+       title    = ""
+       ) +
+  theme_classic()
+
+     
+plot_m2_inter
+```
+```{r echo=TRUE}
+
+# extracting results into a tibble
+boot_dat_mod_3_inter <- 
+  list_case_m3 %>% 
+  map("replicates") %>% 
+  map(
+    ~tibble(
+      mss_neg = na.omit(.x$"event_unpleasantness_centered:mss_neg_score"),
+      mss_pos = na.omit(.x$"event_unpleasantness_centered:mss_pos_score"),
+      mss_dis = na.omit(.x$"event_unpleasantness_centered:mss_dis_score")
+    )
+  ) %>%
+  bind_rows()
+
+
+# rearranging tibble format
+boot_dat_mod_3_inter_long <- 
+  boot_dat_mod_3_inter %>% 
+  pivot_longer(c(mss_neg, mss_pos, mss_dis), names_to = "sch_traits", values_to = "value")
+
+
+# plotting
+plot_m3_inter <- 
+  boot_dat_mod_3_inter_long %>% 
+  ggplot(aes(value, fill = sch_traits)) +
+     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
+     geom_density(alpha = .5, color = NA, show.legend = FALSE) +
+     labs(
+       x    = "Prediction of PLE REACTIVITY in Model 3",
+       y = "",
+       fill = ""
+       ) +
+  theme_classic()
+
+     
+plot_m3_inter
+```
+
+```{r}
+
+   plot_m2_main + plot_m3_main + plot_m2_inter + plot_m3_inter &
+   plot_layout(guides = 'collect') &
+  theme_light() +
+  theme(
+    legend.position = "right",
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 10))
+```
+

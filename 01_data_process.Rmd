@@ -1,5 +1,5 @@
 ---
-title: "levente_data_process"
+title: "01_data_process"
 author: "Levente Ronai"
 output: html_document
 ---
@@ -554,7 +554,7 @@ cfa_mss <- '
 
 mss_pos_score =~  MSS_BH_8 +  MSS_BH_11 +  MSS_BH_14  +
                   MSS_BH_20 + MSS_BH_26 +  MSS_BH_29 +
-                  MSS_BH_23 + MSS_BH_32 + MSS_BH_17 + MSS_BH_35 + MSS_BH_38 + MSS_BH_2  # +MSS_BH_5
+                  MSS_BH_23 + MSS_BH_32 + MSS_BH_17 + MSS_BH_35 + MSS_BH_38 + MSS_BH_2 # +MSS_BH_5
             
 mss_neg_score =~  MSS_BH_19 + MSS_BH_28 + MSS_BH_13 + 
                   MSS_BH_34 + MSS_BH_1 + MSS_BH_4 + MSS_BH_7 + # MSS_BH_10 + 
@@ -564,6 +564,7 @@ mss_dis_score =~  MSS_BH_3 + MSS_BH_6 + MSS_BH_9 +
                   MSS_BH_12 + MSS_BH_15 + MSS_BH_18 +
                   MSS_BH_21 + MSS_BH_24 + MSS_BH_27 +
                   MSS_BH_30 + MSS_BH_36 + MSS_BH_33 
+                  
 '
 
 fit_mss <- cfa(model = cfa_mss, # ordered = T,
@@ -586,7 +587,7 @@ fit_mss <- cfa(model = cfa_mss, # ordered = T,
                                             'MSS_BH_33', 'MSS_BH_34',
                                             'MSS_BH_35', 'MSS_BH_36',
                                             'MSS_BH_37', 'MSS_BH_38'),
-               data = dat_cfa_mss, std.lv = TRUE, estimator = "WLSMV")
+                data = dat_cfa_mss, std.lv = TRUE, estimator = "WLSMV")
 
 ```
 
@@ -616,6 +617,7 @@ summary(fit_mss, fit.measures = TRUE, standardize = TRUE)
 
 # factor loadings
 inspect(fit_mss, what = "std")$lambda
+
 ```
 
 ```{r, warning = T}
