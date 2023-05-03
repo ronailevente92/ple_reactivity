@@ -689,11 +689,14 @@ summary(fit, std = T, fit.measures = T)
 
 ```{r, message=F, warning=F, include=F}
 
-vars <- c( "sad", "afraid", "unrested", "irritated", "angry", "ple_control", "ple_strange", "ple_thoughts", "ple_suspicion", "ple_treatment", "ple_thougtscontrol", #"gonogo_dprime", "nback_dprime",
-           "event_unpleasantness")
+# vars <- c( "sad", "afraid", "unrested", "irritated", "angry", "ple_control", "ple_strange", "ple_thoughts", "ple_suspicion", "ple_treatment", "ple_thougtscontrol", # "gonogo_dprime", "nback_dprime",
+#            "event_unpleasantness")
+# 
+# 
+# vars <- c("ple_control", "ple_strange", "ple_thoughts", "ple_suspicion", "ple_treatment", "ple_thougtscontrol", "gonogo_dprime", "nback_dprime", "event_unpleasantness")
+# 
+# vars <- c("ple_cfa", "gonogo_dprime", "nback_dprime", "event_unpleasantness")
 
-
-vars <- c("ple_control", "ple_strange", "ple_thoughts", "ple_suspicion", "ple_treatment", "ple_thougtscontrol", "gonogo_dprime", "nback_dprime", "event_unpleasantness")
 
 
 ```

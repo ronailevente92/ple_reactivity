@@ -57,7 +57,6 @@ tab_model(m2, m3, show.aicc = T, show.std = T)
 ```{r}
 
 AIC(m0, m1, m2, m3)
-BIC(m0, m1, m2, m3)
 
 ```
 
