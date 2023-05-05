@@ -27,6 +27,7 @@ library(car)
 library(showtext)
 library(lmeresampler)
 library(patchwork)
+# library(gtsummary)
 
 
 
@@ -134,13 +135,18 @@ list_case_m3 <-
 # extracting bootstrapped coefficients
 
 ```{r paged.print=TRUE}
-
 ci_boot_m2 <-
   list_case_m2 %>%
   map(confint, type = "norm")
 
-(ci_boot_m2)
+ci_boot_m2 %>% view()
 
+# ci_boot_m2 %>% tbl_summary()
+
+```
+
+
+```{r paged.print=TRUE}
 ci_boot_m3 <-
   list_case_m3 %>%
   map(confint, type = "norm")
@@ -175,22 +181,36 @@ map(
 boot_dat_mod_2_main_long <- 
   boot_dat_mod_2_main %>% 
   pivot_longer(c(perceived_distress, pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+```
 
 
+```{r}
+
+library(RColorBrewer)
+display.brewer.all()
+
+colors <- brewer.pal(4, "Dark2")
+
+```
+
+
+```{r echo=TRUE}
 # plotting
 plot_m2_main <- 
   boot_dat_mod_2_main_long %>% 
   ggplot(aes(value, fill = predictor)) +
      geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
-     geom_density(alpha = .5, color = NA, show.legend = FALSE) +
+     geom_density(alpha = .5, color = NA) + #, show.legend = FALSE) +
      labs(
        x  = "Prediction of PLEs in Model 2",
        y = "Density",
        fill = "",
-       title = "Bootstrapped estimates of main and interaction effects",
+       title = "",
        ) +
-     # scale_fill_manual(values = c("#FF9500", "#219C19", "#609CCE", "pink"),
-     #                  labels = c("disorganizated sch",  "negative sch",  "perceived distress", "positive sch")) + 
+     scale_fill_manual(values = colors,
+                      labels = c("disorganizated sch",  "negative sch",  "perceived distress", "positive sch")) +
+    scale_x_continuous(limits = c(-0.5, 1), breaks = seq(from = -0.5, to = 1, by = 0.25)) +
+
   theme_classic()
 
 plot_m2_main
@@ -269,14 +289,17 @@ plot_m2_inter <-
   ggplot(aes(value, fill = sch_traits)) +
      geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
      geom_density(alpha = .5, color = NA, show.legend = FALSE) +
-     labs(
-       x    = "Prediction of PLE REACTIVITY in Model 2",
+   labs(
+       x  = "Prediction of PLE reactivity in Model 2",
        y = "Density",
        fill = "",
-       title    = ""
+      # title = "Bootstrapped estimates of main and interaction effects",
        ) +
-  theme_classic()
+  scale_fill_manual(values = c("#1B9E77", "#D95F02","#E7298A"),
+                      labels = c("disorganizated sch",  "negative sch", "positive sch")) +
+  scale_x_continuous(limits = c(-0.5, 1), breaks = seq(from = -0.5, to = 1, by = 0.25)) +
 
+  theme_classic()
      
 plot_m2_inter
 ```
@@ -319,15 +342,15 @@ plot_m3_inter <-
 plot_m3_inter
 ```
 
-```{r}
+```{r, fig.height=4, fig.width=5}
 
-   plot_m2_main + plot_m3_main + plot_m2_inter + plot_m3_inter &
+   plot_m2_inter/ plot_m2_main  &
    plot_layout(guides = 'collect') &
-  theme_light() +
+  theme_classic() +
   theme(
-    legend.position = "right",
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 12),
+    legend.position = "bottom",
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10),
     legend.title = element_text(size = 10),
     legend.text = element_text(size = 10))
 ```
