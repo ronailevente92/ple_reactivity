@@ -301,7 +301,7 @@ saveRDS(m3, "models/m3.rds")
 ```
 
 ```{r}
-m3_alt <- 
+m4 <- 
   lmer(
     ple_cfa ~ 
       day + beep + gender + age +
@@ -312,10 +312,10 @@ m3_alt <-
       (event_unpleasantness_centered | id_esm), data = model_dat %>% filter(!is.na(ple_cfa_centered_lag)))
 
 
-tab_model(m2, m3_alt, m3, show.aicc = T, show.std = T)
-plot_model(m3_alt, type = "int")
+tab_model(m2, m4, m3, show.aicc = T, show.std = T)
+plot_model(m4, type = "int")
 
-saveRDS(m3_alt, "models/m3_alt.rds")
+saveRDS(m4, "models/m4.rds")
 
 
 ```
