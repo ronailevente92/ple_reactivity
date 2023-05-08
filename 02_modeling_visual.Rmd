@@ -301,6 +301,26 @@ saveRDS(m3, "models/m3.rds")
 ```
 
 ```{r}
+m3_alt <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      event_unpleasantness_centered * mss_neg_score  +
+      event_unpleasantness_centered * mss_pos_score  +
+      event_unpleasantness_centered * mss_dis_score  +
+
+      (event_unpleasantness_centered | id_esm), data = model_dat %>% filter(!is.na(ple_cfa_centered_lag)))
+
+
+tab_model(m2, m3_alt, m3, show.aicc = T, show.std = T)
+plot_model(m3_alt, type = "int")
+
+saveRDS(m3_alt, "models/m3_alt.rds")
+
+
+```
+
+```{r}
 tab_model(m0, m1, show.aicc = T, show.std = T)
 tab_model(m2, m3, show.aicc = T, show.std = T)
 

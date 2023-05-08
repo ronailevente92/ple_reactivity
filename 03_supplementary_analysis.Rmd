@@ -27,11 +27,17 @@ library(car)
 library(showtext)
 library(lmeresampler)
 library(patchwork)
-# library(gtsummary)
+library(gtsummary)
 
 
 
 options(scipen = 999)
+```
+
+```{r}
+
+sessionInfo()
+
 ```
 
 # reading saved models and data
@@ -139,10 +145,14 @@ ci_boot_m2 <-
   list_case_m2 %>%
   map(confint, type = "norm")
 
-ci_boot_m2 %>% view()
 
-# ci_boot_m2 %>% tbl_summary()
+# boot_data_m2 <- 
+#   data.frame(ci_boot_m2)
+# 
+# library("xlsx")
+# write.xlsx(boot_data_m2, "boot_data_m2.xlsx")
 
+ci_boot_m2
 ```
 
 
@@ -151,7 +161,13 @@ ci_boot_m3 <-
   list_case_m3 %>%
   map(confint, type = "norm")
 
-(ci_boot_m3)
+ci_boot_m3
+```
+
+
+```{r paged.print=TRUE}
+
+
 
 ```
 
@@ -164,7 +180,7 @@ ci_boot_m3 <-
 # extracting results into a tibble
 boot_dat_mod_2_main <- 
   list_case_m2 %>% 
-  map("replicates") %>%
+  map("replicates") %>% 
   
 map(
     ~tibble(
@@ -208,8 +224,9 @@ plot_m2_main <-
        title = "",
        ) +
      scale_fill_manual(values = colors,
-                      labels = c("disorganizated sch",  "negative sch",  "perceived distress", "positive sch")) +
+                      labels = c("disorganized sch",  "negative sch",  "perceived distress", "positive sch")) +
     scale_x_continuous(limits = c(-0.5, 1), breaks = seq(from = -0.5, to = 1, by = 0.25)) +
+
 
   theme_classic()
 
@@ -290,19 +307,21 @@ plot_m2_inter <-
      geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
      geom_density(alpha = .5, color = NA, show.legend = FALSE) +
    labs(
-       x  = "Prediction of PLE reactivity in Model 2",
+       x = bquote("Prediction of " ~ italic("PLE reactivity") ~ "in Model 2"),
        y = "Density",
        fill = "",
       # title = "Bootstrapped estimates of main and interaction effects",
        ) +
   scale_fill_manual(values = c("#1B9E77", "#D95F02","#E7298A"),
-                      labels = c("disorganizated sch",  "negative sch", "positive sch")) +
+                      labels = c("disorganized sch",  "negative sch", "positive sch")) +
   scale_x_continuous(limits = c(-0.5, 1), breaks = seq(from = -0.5, to = 1, by = 0.25)) +
 
   theme_classic()
      
 plot_m2_inter
 ```
+
+
 ```{r echo=TRUE}
 
 # extracting results into a tibble
