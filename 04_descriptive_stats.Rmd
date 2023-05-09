@@ -574,6 +574,7 @@ ple_cfa_figure <- model_dat %>%
   select(id_esm, day, beep, ple_cfa) %>%
   filter(!is.na(ple_cfa))
 
+# histogram
 visu_ple_cfa <- ggplot(ple_cfa_figure) +
   geom_histogram(aes(ple_cfa), bins = 30, fill = "#A9A9A9") +   #, color = "#797979") +
   theme_classic() +
@@ -586,20 +587,7 @@ visu_ple_cfa <- ggplot(ple_cfa_figure) +
 
 visu_ple_cfa
 
-# # distribution of log-transformed PLE CFA scores
-# ple_cfa_figure <- ple_cfa_figure %>%
-#   mutate(ple_cfa_log = log10(ple_cfa + 3))
-# 
-# visu_ple_cfa_log <- ggplot(ple_cfa_figure) +
-#   geom_histogram(aes(ple_cfa_log), bins = 30, fill = "#A9A9A9") +  #, color = "#797979") +
-#   theme_classic() +
-#   labs(
-#     x = "PLE factor score (log10-transformed)",
-#     y = "Number of cases"
-#   ) +
-# #  theme_bw() +
-#   theme(axis.title = element_text(size = 12))
-# 
-# visu_ple_cfa_log
+# raincloud plot
+
 ```
 
