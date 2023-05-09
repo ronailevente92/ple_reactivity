@@ -556,7 +556,7 @@ dat_cleaned_figure <- dat_cleaned %>%
   distinct()
 
 visu_compliance <- ggplot(dat_cleaned_figure) +
-  geom_histogram(aes(esm_compl_final), bins = 40, fill = "#A9A9A9", color = "#797979") +
+  geom_histogram(aes(esm_compl_final), bins = 40, fill = "#A9A9A9") + #, color = "#797979") +
   theme_classic() +
   labs(
     x = "Compliance rate (%)",
@@ -575,7 +575,7 @@ ple_cfa_figure <- model_dat %>%
   filter(!is.na(ple_cfa))
 
 visu_ple_cfa <- ggplot(ple_cfa_figure) +
-  geom_histogram(aes(ple_cfa), bins = 40, fill = "#A9A9A9", color = "#797979") +
+  geom_histogram(aes(ple_cfa), bins = 30, fill = "#A9A9A9") +   #, color = "#797979") +
   theme_classic() +
   labs(
     x = "PLE factor score",
@@ -590,12 +590,13 @@ ple_cfa_figure <- ple_cfa_figure %>%
   mutate(ple_cfa_log = log10(ple_cfa + 3))
 
 visu_ple_cfa_log <- ggplot(ple_cfa_figure) +
-  geom_histogram(aes(ple_cfa_log), bins = 40, fill = "#A9A9A9", color = "#797979") +
+  geom_histogram(aes(ple_cfa_log), bins = 30, fill = "#A9A9A9") +  #, color = "#797979") +
   theme_classic() +
   labs(
     x = "PLE factor score (log10-transformed)",
     y = "Number of cases"
   ) +
+#  theme_bw() + 
   theme(axis.title = element_text(size = 12))
 
 visu_ple_cfa_log
