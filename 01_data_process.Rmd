@@ -133,12 +133,9 @@ big_data <-
 
 dat_cleaned <- 
   big_data %>% 
-  select(id_esm, age, gender, edu, city, start_date, date_esm, date_cogtask,
+  select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_cogtask,
          day, beep, event_pleasantness, sad:active, homeo_hungry, coffee, alcohol,
-         ple_lose_control = ple_control, ple_thought_control =  ple_strange, ple_unusual_thoughts = ple_thoughts, ple_suspicion,
-         ple_mistreat = ple_treatment, ple_perception, ple_paranoia = ple_thougtscontrol, ple_familiarstrange,
          contains(c("gonogo", "nback", "mzq_", "mss_", "ple_")), -contains(c("minutes")))
-
 
 ```
 
@@ -398,9 +395,9 @@ cfa_ple <-
   dat_cleaned %>%
   filter(!is.na(date_esm)) %>%
   select(id_esm, date_esm, beep,
-         ple_lose_control, ple_thought_control, ple_unusual_thoughts,
-         ple_suspicion, ple_mistreat, ple_perception, ple_paranoia, ple_familiarstrange) %>%
-  filter_at(vars(ple_lose_control:ple_familiarstrange), all_vars(!is.na(.))) %>%
+         ple_control, ple_strange, ple_thoughts, ple_suspicion,
+         ple_treatment, ple_perception, ple_thougtscontrol, ple_familiarstrange) %>%
+  filter_at(vars(ple_control:ple_familiarstrange), all_vars(!is.na(.))) %>%
   distinct() %>%
   ungroup()
 
@@ -408,19 +405,19 @@ cfa_ple_syntax <- '
 
   level: 1
 
-      ple_within   =~    ple_lose_control + ple_thought_control + ple_unusual_thoughts + ple_suspicion +
-                         ple_mistreat + ple_perception + ple_paranoia + ple_familiarstrange
+      ple_within   =~    ple_control + ple_strange + ple_thoughts + ple_suspicion +
+                         ple_treatment + ple_perception + ple_thougtscontrol + ple_familiarstrange
                          
                          ple_perception	~~	ple_familiarstrange
-                         ple_unusual_thoughts	~~	ple_familiarstrange
+                         ple_thoughts	~~	ple_familiarstrange
 
 
   level: 2
 
-      ple_between   =~   ple_lose_control + ple_thought_control + ple_unusual_thoughts + ple_suspicion +
-                         ple_mistreat + ple_perception + ple_paranoia + ple_familiarstrange
+      ple_between   =~   ple_control + ple_strange + ple_thoughts + ple_suspicion +
+                         ple_treatment + ple_perception + ple_thougtscontrol + ple_familiarstrange
                          
-                        ple_lose_control	~~	ple_thought_control
+                        ple_control	~~	ple_strange
 
 '
 
@@ -474,7 +471,7 @@ dat_ple_lev_2 <-
 dat_ple_lev_1 <-
   cfa_ple %>%
   cbind(lavPredict(fit_ple, newdata = cfa_ple[4:11], level = 1L)) %>%
-  select(-c(ple_lose_control:ple_familiarstrange))
+  select(-c(ple_control:ple_familiarstrange))
 
 dat_ple <-
   dat_ple_lev_1 %>%
@@ -782,7 +779,7 @@ dat_cleaned <-
 
 model_dat <-
   dat_cleaned %>%
-  select(id_esm, edu, gender, age, city, start_date, day, beep,
+  select(id_esm, session_esm, created_esm, edu, gender, age, city, start_date, day, beep,
 
 
 
@@ -803,9 +800,10 @@ model_dat <-
          ambivalence, ambivalence_centered, ambivalence_centered_lag,
 
          sad, afraid, unrested, irritated, angry,
-        
+         ple_control, ple_strange, ple_thoughts,
+         ple_suspicion, ple_treatment, ple_thougtscontrol, ple_sum,
 
-         contains(c("_mean", "_lag", "ple_")),
+         contains(c("_mean", "_lag")),
          mss_dis, mss_pos, mss_neg, 
          mss_dis_score, mss_pos_score, 
          mss_neg_score, 

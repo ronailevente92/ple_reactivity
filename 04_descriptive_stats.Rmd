@@ -1,0 +1,603 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+# loading packages
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(confintr))
+suppressPackageStartupMessages(library(rstatix))
+
+
+options(scipen = 999)
+```
+
+
+# importing datasets
+```{r message=FALSE}
+initial_sample_pre <- read_csv("data_raw/dat_pre_cleaned.csv")
+model_dat <- read_csv("data_processed/model_dat.csv")
+dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
+```
+
+
+# filtering datasets
+```{r}
+model_dat_distinct <- model_dat %>% 
+  select(id_esm, session_esm, start_date, age, gender, edu) %>% 
+  distinct() %>% 
+  mutate(
+    gender =
+      if_else(
+        gender == "Female",
+        1,
+        2
+        ),
+    gender = as.double(gender)
+  )
+
+dat_not_included <- initial_sample_pre %>% 
+  anti_join(model_dat_distinct, by = c("session" = "session_esm", "gender", "edu")) %>% 
+  filter(!is.na(session))
+```
+
+
+# sample demographics
+
+## initial (=cross-sectional) sample
+```{r}
+# number and age of participants
+  initial_sample_pre %>% 
+    filter(!is.na(session)) %>% 
+    select(session, age) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(age), digits = 2),
+              Median    = round(median(age), digits = 2),
+              SD        = round(sd(age), digits = 2),
+              Range_min = min(age),
+              Range_max = max(age))
+
+# gender
+  # 1 = Female
+  # 2 = Male
+
+initial_sample_pre %>% 
+  filter(!is.na(session)) %>% 
+  select(session, gender) %>%
+  distinct() %>% 
+  select(gender) %>% 
+  table()
+
+initial_sample_pre %>% 
+  filter(!is.na(session)) %>% 
+  select(session, gender) %>%
+  distinct() %>% 
+  select(gender) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(2)
+
+
+# education
+  # 1 = Primary school or lower
+  # 3 = Vocational school without high school diploma
+  # 4 = High school diploma or equivalent 
+  # 5 = Bachelor's or Master's degree
+  # 6 = Doctorate (PhD)
+  # 7 = Other
+  
+initial_sample_pre %>% 
+  filter(!is.na(session)) %>% 
+  select(session, edu) %>%
+  distinct() %>% 
+  select(edu) %>% 
+  table()
+
+initial_sample_pre %>% 
+  filter(!is.na(session)) %>% 
+  select(session, edu) %>%
+  distinct() %>% 
+  select(edu) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(2)
+
+
+# MSS scores
+  initial_sample_pre <- 
+    initial_sample_pre %>% 
+    # recode mss items 2="no"->0, 1="yes" stays the same
+      mutate_at(
+      vars(contains("MSS")),
+      funs(
+        ifelse(
+          . == 2,
+          0,
+          .
+        )
+      )
+    ) %>% 
+    # revert reversed mss items 1->0, 0->1
+    mutate(
+      MSS_BH_4  = abs(MSS_BH_4  -1),
+      MSS_BH_10 = abs(MSS_BH_10 -1),
+      MSS_BH_25 = abs(MSS_BH_25 -1),
+      MSS_BH_37 = abs(MSS_BH_37 -1)
+      ) %>% 
+    
+    mutate(
+      mss_pos = rowSums(select(., c("MSS_BH_2", "MSS_BH_5", "MSS_BH_8", "MSS_BH_11", "MSS_BH_14", "MSS_BH_17", "MSS_BH_20", "MSS_BH_23",   "MSS_BH_26", "MSS_BH_29", "MSS_BH_32", "MSS_BH_35", "MSS_BH_38"))),
+      
+      mss_neg = rowSums(select(., c("MSS_BH_1", "MSS_BH_4", "MSS_BH_7", "MSS_BH_10", "MSS_BH_13", "MSS_BH_16", "MSS_BH_19", "MSS_BH_22",   "MSS_BH_25", "MSS_BH_28", "MSS_BH_31", "MSS_BH_34", "MSS_BH_37"))),
+               
+      mss_dis = rowSums(select(., c("MSS_BH_3", "MSS_BH_6", "MSS_BH_9", "MSS_BH_12", "MSS_BH_15", "MSS_BH_18", "MSS_BH_21", "MSS_BH_24",   "MSS_BH_27", "MSS_BH_30", "MSS_BH_33", "MSS_BH_36")))
+    )
+  
+  ## MSS_dis
+    initial_sample_pre %>%
+    select(session, age, gender, edu, mss_dis) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_dis), digits = 2),
+              Median    = round(median(mss_dis), digits = 2),
+              SD        = round(sd(mss_dis), digits = 2),
+              Range_min = min(mss_dis),
+              Range_max = max(mss_dis))
+    
+  ## MSS_pos
+    initial_sample_pre %>%
+    select(session, age, gender, edu, mss_pos) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_pos), digits = 2),
+              Median    = round(median(mss_pos), digits = 2),
+              SD        = round(sd(mss_pos), digits = 2),
+              Range_min = min(mss_pos),
+              Range_max = max(mss_pos)) 
+    
+  ## MSS_neg
+    initial_sample_pre %>%
+    select(session, age, gender, edu, mss_neg) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_neg), digits = 2),
+              Median    = round(median(mss_neg), digits = 2),
+              SD        = round(sd(mss_neg), digits = 2),
+              Range_min = min(mss_neg),
+              Range_max = max(mss_neg)) 
+```
+
+
+## not included
+```{r}
+# number and age of participants  
+dat_not_included %>% 
+  select(session, age) %>% 
+  summarise(N         = n(),
+            Mean      = round(mean(age), digits = 2),
+            Median    = round(median(age), digits = 2),
+            SD        = round(sd(age), digits = 2),
+            Range_min = min(age),
+            Range_max = max(age))
+
+# gender
+  # 1 = Female
+  # 2 = Male
+
+dat_not_included %>% 
+  select(gender) %>% 
+  table()
+  
+dat_not_included %>%
+  select(gender) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(2)
+  
+
+# education
+  # 1 = Primary school or lower
+  # 3 = Vocational school without high school diploma
+  # 4 = High school diploma or equivalent 
+  # 5 = Bachelor's or Master's degree
+  # 6 = Doctorate (PhD)
+  # 7 = Other
+
+dat_not_included %>% 
+  select(edu) %>% 
+  table()
+  
+dat_not_included %>% 
+  select(edu) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(2)
+
+
+# MSS scores
+  dat_not_included <- 
+    dat_not_included %>% 
+    # recode mss items 2="no"->0, 1="yes" stays the same
+      mutate_at(
+      vars(contains("MSS")),
+      funs(
+        ifelse(
+          . == 2,
+          0,
+          .
+        )
+      )
+    ) %>% 
+    # revert reversed mss items 1->0, 0->1
+    mutate(
+      MSS_BH_4  = abs(MSS_BH_4  -1),
+      MSS_BH_10 = abs(MSS_BH_10 -1),
+      MSS_BH_25 = abs(MSS_BH_25 -1),
+      MSS_BH_37 = abs(MSS_BH_37 -1)
+      ) %>% 
+    
+    mutate(
+      mss_pos = rowSums(select(., c("MSS_BH_2", "MSS_BH_5", "MSS_BH_8", "MSS_BH_11", "MSS_BH_14", "MSS_BH_17", "MSS_BH_20", "MSS_BH_23",   "MSS_BH_26", "MSS_BH_29", "MSS_BH_32", "MSS_BH_35", "MSS_BH_38"))),
+      
+      mss_neg = rowSums(select(., c("MSS_BH_1", "MSS_BH_4", "MSS_BH_7", "MSS_BH_10", "MSS_BH_13", "MSS_BH_16", "MSS_BH_19", "MSS_BH_22",   "MSS_BH_25", "MSS_BH_28", "MSS_BH_31", "MSS_BH_34", "MSS_BH_37"))),
+               
+      mss_dis = rowSums(select(., c("MSS_BH_3", "MSS_BH_6", "MSS_BH_9", "MSS_BH_12", "MSS_BH_15", "MSS_BH_18", "MSS_BH_21", "MSS_BH_24",   "MSS_BH_27", "MSS_BH_30", "MSS_BH_33", "MSS_BH_36")))
+    )
+  
+  ## MSS_dis
+    dat_not_included %>%
+    select(session, age, gender, edu, mss_dis) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_dis), digits = 2),
+              Median    = round(median(mss_dis), digits = 2),
+              SD        = round(sd(mss_dis), digits = 2),
+              Range_min = min(mss_dis),
+              Range_max = max(mss_dis))
+    
+  ## MSS_pos
+    dat_not_included %>%
+    select(session, age, gender, edu, mss_pos) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_pos), digits = 2),
+              Median    = round(median(mss_pos), digits = 2),
+              SD        = round(sd(mss_pos), digits = 2),
+              Range_min = min(mss_pos),
+              Range_max = max(mss_pos)) 
+    
+  ## MSS_neg
+    dat_not_included %>%
+    select(session, age, gender, edu, mss_neg) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_neg), digits = 2),
+              Median    = round(median(mss_neg), digits = 2),
+              SD        = round(sd(mss_neg), digits = 2),
+              Range_min = min(mss_neg),
+              Range_max = max(mss_neg)) 
+```
+
+
+## final sample (proceeded to the ESM phase)
+```{r}
+# number and age of participants  
+model_dat %>%
+    select(id_esm, age) %>%
+    distinct() %>%
+    summarise(N         = n(),
+              Mean      = round(mean(age), digits = 2),
+              Median    = round(median(age), digits = 2),
+              SD        = round(sd(age), digits = 2),
+              Range_min = min(age),
+              Range_max = max(age))
+
+
+# gender
+model_dat %>% 
+  select(id_esm, gender) %>%
+  distinct() %>% 
+  select(gender) %>% 
+  table()
+
+model_dat %>% 
+  select(id_esm, gender) %>%
+  distinct() %>% 
+  select(gender) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(2)
+
+  # 1 = Female
+  # 2 = Male
+  
+# education
+model_dat %>% 
+  select(id_esm, edu) %>%
+  distinct() %>% 
+  select(edu) %>% 
+  table()
+
+model_dat %>% 
+  select(id_esm, edu) %>%
+  distinct() %>% 
+  select(edu) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(2)
+  
+  # 1 = Primary school or lower
+  # 3 = Vocational school without high school diploma
+  # 4 = High school diploma or equivalent 
+  # 5 = Bachelor's or Master's degree
+  # 6 = Doctorate (PhD)
+  # 7 = Other
+
+
+# MSS scores
+  ## MSS_dis
+    model_dat %>%
+    select(id_esm, age, gender, edu, mss_dis) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_dis), digits = 2),
+              Median    = round(median(mss_dis), digits = 2),
+              SD        = round(sd(mss_dis), digits = 2),
+              Range_min = min(mss_dis),
+              Range_max = max(mss_dis))
+    
+  ## MSS_pos
+    model_dat %>%
+    select(id_esm, age, gender, edu, mss_pos) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_pos), digits = 2),
+              Median    = round(median(mss_pos), digits = 2),
+              SD        = round(sd(mss_pos), digits = 2),
+              Range_min = min(mss_pos),
+              Range_max = max(mss_pos)) 
+    
+  ## MSS_neg
+    model_dat %>%
+    select(id_esm, age, gender, edu, mss_neg) %>% 
+    distinct() %>% 
+    summarise(N         = n(),
+              Mean      = round(mean(mss_neg), digits = 2),
+              Median    = round(median(mss_neg), digits = 2),
+              SD        = round(sd(mss_neg), digits = 2),
+              Range_min = min(mss_neg),
+              Range_max = max(mss_neg))
+```
+
+
+# descriptives
+
+## descriptives of ESM surveys in final sample
+```{r}
+# total number of completed esm surveys
+model_dat %>%
+  distinct() %>% 
+  filter(!is.na(created_esm)) %>% 
+  summarise(n_id  = length(unique(id_esm)),
+            n_obs = length(created_esm))
+
+
+#...and per capita
+model_dat %>%
+  filter(!is.na(created_esm)) %>%
+  distinct() %>% 
+  group_by(id_esm) %>% 
+  summarise(n_obs = length(created_esm)) %>% 
+  ungroup() %>% 
+  summarise(max_n_obs    = max(n_obs),
+            min_n_obs    = min(n_obs),
+            mean_n_obs   = mean(n_obs),
+            median_n_obs = median(n_obs),
+            sd_n_obs     = sd(n_obs))
+
+
+# descriptives of ple
+  model_dat %>%
+    filter(!is.na(created_esm)) %>%
+    select(id_esm, day, beep, ple_sum) %>%
+    summarise(
+      max_ple_sum    = max(ple_sum),
+      min_ple_sum    = min(ple_sum),
+      mean_ple_sum   = mean(ple_sum),
+      median_ple_sum = median(ple_sum),
+      sd_ple_sum    = sd(ple_sum)
+  )
+  
+  
+# descriptives of event unpleasantness
+  model_dat %>%
+    filter(!is.na(created_esm)) %>%
+    select(id_esm, day, beep, event_unpleasantness) %>%
+    summarise(
+      max_event_unpleasantness    = max(event_unpleasantness),
+      min_event_unpleasantness    = min(event_unpleasantness),
+      mean_event_unpleasantness   = mean(event_unpleasantness),
+      median_event_unpleasantness = median(event_unpleasantness),
+      sd_event_unpleasantness    = sd(event_unpleasantness)
+  )
+```
+
+## adding mss scores to model_dat_distinct
+```{r}
+model_dat_distinct <- model_dat %>% 
+  select(id_esm, session_esm, start_date, age, gender, edu, mss_dis, mss_pos, mss_neg) %>% 
+  distinct() %>% 
+  mutate(
+    gender =
+      if_else(
+        gender == "Female",
+        1,
+        2
+        ),
+    gender = as.double(gender)
+  )
+```
+
+
+## statistical tests to compare initial and final samples
+```{r}
+# test for median age
+  # normality test
+  shapiro.test(dat_not_included$age)
+  shapiro.test(model_dat_distinct$age)
+    # -> normality not assumed -> mann-whitney
+  
+  # mann-whitney test
+  wilcox.test(dat_not_included$age, model_dat_distinct$age)
+  
+  age_compare_not_included <- tibble(age = dat_not_included$age, group = "not_included")
+  age_compare_final <- tibble(age = model_dat_distinct$age, group = "final")
+  age_compare <- age_compare_not_included %>% bind_rows(age_compare_final)
+  
+  wilcox_test(age_compare, age ~ group, paired = FALSE) %>% add_significance()
+  wilcox_effsize(age_compare, age ~ group, paired = FALSE)
+  
+
+# test for gender distribution
+  gender_compare_not_included <- tibble(gender = dat_not_included$gender, group = "not_included")
+  gender_compare_final <- tibble(gender = model_dat_distinct$gender, group = "final")
+  gender_compare <- gender_compare_not_included %>% bind_rows(gender_compare_final)
+  
+  chisq.test(gender_compare$group, gender_compare$gender)
+
+
+# test for education
+  edu_compare_not_included <- tibble(edu = dat_not_included$edu, group = "not_included")
+  edu_compare_final <- tibble(edu = model_dat_distinct$edu, group = "final")
+  edu_compare <- edu_compare_not_included %>% bind_rows(edu_compare_final)
+  
+  edu_chisq <- chisq.test(edu_compare$group, edu_compare$edu)
+  cramersv(edu_chisq)
+  
+
+# test for median mss scores
+  
+  ## mss dis
+    # normality test
+    shapiro.test(dat_not_included$mss_dis)
+    shapiro.test(model_dat_distinct$mss_dis)
+      # -> normality not assumed -> mann-whitney
+  
+    # mann-whitney test
+    wilcox.test(dat_not_included$mss_dis, model_dat_distinct$mss_dis)
+    
+  ## mss pos
+    # normality test
+    shapiro.test(dat_not_included$mss_pos)
+    shapiro.test(model_dat_distinct$mss_pos)
+      # -> normality not assumed -> mann-whitney
+  
+    # mann-whitney test
+    wilcox.test(dat_not_included$mss_pos, model_dat_distinct$mss_pos)
+    
+  ## mss neg
+    # normality test
+    shapiro.test(dat_not_included$mss_neg)
+    shapiro.test(model_dat_distinct$mss_neg)
+      # -> normality not assumed -> mann-whitney
+  
+    # mann-whitney test
+    wilcox.test(dat_not_included$mss_neg, model_dat_distinct$mss_neg)
+```
+
+
+
+# calculating ESM survey compliance rate in final sample
+```{r}
+# filtering dataset
+# dat_unfiltered <- dat_unfiltered %>% 
+#   filter(!is.na(day) & day != 0)
+
+
+# identifying day of quitting
+dat_maxday_esm <- dat_cleaned %>% 
+  select(id_esm, created_esm, day) %>% 
+  filter(!is.na(created_esm)) %>% 
+  group_by(id_esm) %>% 
+  summarise(max_day_esm = max(day))
+
+dat_cleaned <- dat_cleaned %>% 
+  left_join(dat_maxday_esm, by = "id_esm")
+
+
+# calculating compliance rate
+dat_cleaned %>%
+  select(id_esm, created_esm, day, beep, max_day_esm) %>%
+  distinct() %>%
+  group_by(id_esm) %>%
+  summarise(completed = sum(!is.na(created_esm)),
+            all = max_day_esm * 8, 
+            esm_compl_final = (completed / all) * 100
+  ) %>%
+  ungroup() %>%
+  summarise(median_final_compl = median(esm_compl_final, na.rm = T),
+            mean_final_compl   = mean(esm_compl_final, na.rm = T),
+            sd_final_compl     = sd(esm_compl_final, na.rm = T),
+            min_final_compl    = min(esm_compl_final, na.rm = T),
+            max_final_compl    = max(esm_compl_final, na.rm = T)
+  )
+
+# visualizing compliance rate
+dat_cleaned_figure <- dat_cleaned %>%
+  select(id_esm, created_esm, day, beep, max_day_esm) %>%
+  distinct() %>% 
+  group_by(id_esm) %>%
+  summarise(completed = sum(!is.na(created_esm)),
+            all = max_day_esm * 8,
+            esm_compl_final = (completed / all) * 100
+  ) %>%
+  ungroup() %>%
+  distinct()
+
+visu_compliance <- ggplot(dat_cleaned_figure) +
+  geom_histogram(aes(esm_compl_final), bins = 40, fill = "#A9A9A9", color = "#797979") +
+  theme_classic() +
+  labs(
+    x = "Compliance rate (%)",
+    y = "Number of participants"
+  ) +
+  theme(axis.title = element_text(size = 12))
+
+visu_compliance
+```
+
+
+# distribution of PLE CFA scores
+```{r}
+ple_cfa_figure <- model_dat %>% 
+  select(id_esm, day, beep, ple_cfa) %>%
+  filter(!is.na(ple_cfa))
+
+visu_ple_cfa <- ggplot(ple_cfa_figure) +
+  geom_histogram(aes(ple_cfa), bins = 40, fill = "#A9A9A9", color = "#797979") +
+  theme_classic() +
+  labs(
+    x = "PLE factor score",
+    y = "Number of cases"
+  ) +
+  theme(axis.title = element_text(size = 12))
+
+visu_ple_cfa
+
+# distribution of log-transformed PLE CFA scores
+ple_cfa_figure <- ple_cfa_figure %>% 
+  mutate(ple_cfa_log = log10(ple_cfa + 3))
+
+visu_ple_cfa_log <- ggplot(ple_cfa_figure) +
+  geom_histogram(aes(ple_cfa_log), bins = 40, fill = "#A9A9A9", color = "#797979") +
+  theme_classic() +
+  labs(
+    x = "PLE factor score (log10-transformed)",
+    y = "Number of cases"
+  ) +
+  theme(axis.title = element_text(size = 12))
+
+visu_ple_cfa_log
+```
+
