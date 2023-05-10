@@ -13,6 +13,7 @@ suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(confintr))
 suppressPackageStartupMessages(library(rstatix))
+suppressPackageStartupMessages(library(ggrain))
 
 
 options(scipen = 999)
@@ -575,7 +576,7 @@ ple_cfa_figure <- model_dat %>%
   filter(!is.na(ple_cfa))
 
 # histogram
-visu_ple_cfa <- ggplot(ple_cfa_figure) +
+hist_ple_cfa <- ggplot(ple_cfa_figure) +
   geom_histogram(aes(ple_cfa), bins = 30, fill = "#A9A9A9") +   #, color = "#797979") +
   theme_classic() +
   labs(
@@ -585,9 +586,26 @@ visu_ple_cfa <- ggplot(ple_cfa_figure) +
   scale_x_continuous(breaks=seq(-4,10,2)) +
   theme(axis.title = element_text(size = 12))
 
-visu_ple_cfa
+hist_ple_cfa
 
 # raincloud plot
+raincloud_ple_cfa <-ggplot(ple_cfa_figure, aes(1, ple_cfa)) +
+  geom_rain(
+    alpha = .3
+    ) +
+  theme_classic() +
+  labs(
+    y = "PLE factor score",
+    x = ""
+  ) +
+  scale_y_continuous(breaks=seq(-4,10,2)) +
+  theme(
+    axis.title = element_text(size = 12),
+    axis.ticks.y = element_blank(),
+    axis.text.y = element_blank()
+    ) +
+  coord_flip()
 
+raincloud_ple_cfa
 ```
 
