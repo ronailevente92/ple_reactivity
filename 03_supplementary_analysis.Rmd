@@ -28,6 +28,7 @@ library(showtext)
 library(lmeresampler)
 library(patchwork)
 library(gtsummary)
+library(ggrain)
 
 
 
@@ -48,23 +49,44 @@ model_dat <- read.csv("data_processed/model_dat.csv")
 
 
 m0 <- readRDS("models/m0.rds")
+m0_alt <- readRDS("models/m0_alt.rds")
 m1 <- readRDS("models/m1.rds")
 m2 <- readRDS("models/m2.rds")
 m3 <- readRDS("models/m3.rds")
+m4 <- readRDS("models/m4.rds")
+
 
 ```
 
 ```{r}
 
-tab_model(m0, m1, show.aicc = T, show.std = T)
-tab_model(m2, m3, show.aicc = T, show.std = T)
+tab_model(m1, m2, show.aicc = T, show.std = T)
+tab_model(m3, m4, show.aicc = T, show.std = T)
 
 ```
 
 ```{r}
 
-AIC(m0, m1, m2, m3)
+AIC(m0, m1, m2)
+AIC(m0_alt, m3, m4)
 
+```
+
+# assumptions for m1
+```{r paged.print=FALSE}
+
+check_collinearity(m1)
+
+plot_model(m1, type = "diag")
+
+# normality test for residuals
+m1_residuals <- residuals(m1)
+lillie.test(m1_residuals)
+
+hist(m1_residuals)
+
+# normality test for crtiteria
+lillie.test(model_dat$ple_cfa)
 ```
 
 # assumptions for m2
@@ -78,8 +100,9 @@ plot_model(m2, type = "diag")
 m2_residuals <- residuals(m2)
 lillie.test(m2_residuals)
 
-# normality test for crtiteria
-lillie.test(model_dat$ple_cfa)
+hist(m2_residuals)
+
+
 ```
 
 # assumptions for m3
@@ -93,58 +116,118 @@ plot_model(m3, type = "diag")
 m3_residuals <- residuals(m3)
 lillie.test(m3_residuals)
 
+# normality test for crtiteria
+lillie.test(model_dat$event_unpleasantness)
+
+```
+
+# assumptions for m4
+```{r paged.print=FALSE}
+
+check_collinearity(m4)
+# check_model(baseline_model)
+plot_model(m4, type = "diag")
+
+# normality test for residuals
+m4_residuals <- residuals(m4)
+lillie.test(m4_residuals)
+
 ```
 
 # bootstrapping
 
 ```{r}
+boot_m1 <-
+  bootstrap(
+    m1,
+    .f = fixef,
+    type = "wild",
+    hccme =  "hc2",
+    aux.dist = "mammen",
+    B = 5000 ,
+    resample = c(TRUE, TRUE)
+  )
+saveRDS(boot_m1, "models/boot_m1.rds")
 
-# cases_boot_m2 <-
-#   bootstrap(
-#     m2,
-#     .f = fixef,
-#     type = "case",
-#     B = 5000 ,
-#     resample = c(TRUE, TRUE)
-#   )
-# 
-# saveRDS(cases_boot_m2, "models/cases_boot_m2.rds")
-# 
-# 
-# cases_boot_m3 <-
-#   bootstrap(
-#     m3,
-#     .f = fixef,
-#     type = "case",
-#     B = 5000 ,
-#     resample = c(TRUE, TRUE)
-#   )
-# 
-# saveRDS(cases_boot_m3, "models/cases_boot_m3.rds")
+
+boot_m2 <-
+  bootstrap(
+    m2,
+    .f = fixef,
+    type = "wild",
+    hccme =  "hc2",
+    aux.dist = "mammen",
+    B = 5000 ,
+    resample = c(TRUE, TRUE)
+  )
+saveRDS(boot_m2, "models/boot_m2.rds")
+```
+
+
+```{r}
+boot_m3 <-
+  bootstrap(
+    m3,
+    .f = fixef,
+    type = "wild",
+    hccme =  "hc2",
+    aux.dist = "mammen",
+    B = 5000 ,
+    resample = c(TRUE, TRUE)
+  )
+saveRDS(boot_m3, "models/boot_m3.rds")
+
+
+boot_m4 <-
+  bootstrap(
+    m4,
+    .f = fixef,
+    type = "wild",
+    hccme =  "hc2",
+    aux.dist = "mammen",
+    B = 5000 ,
+    resample = c(TRUE, TRUE)
+  )
+saveRDS(boot_m4, "models/boot_m4.rds")
+
 
 ```
 
 # reading bootstrap file and extracting results into a list
 
 ```{r}
-cases_boot_m2 <- readRDS("models/cases_boot_m2.rds")
-cases_boot_m3 <- readRDS("models/cases_boot_m3.rds")
+boot_m2 <- readRDS("models/boot_m2.rds")
+boot_m3 <- readRDS("models/boot_m3.rds")
+boot_m1 <- readRDS("models/boot_m1.rds")
+boot_m4 <- readRDS("models/boot_m4.rds")
 
 
 list_case_m2 <- 
-  list(cases_boot_m2)
+  list(boot_m2)
 
 list_case_m3 <- 
-  list(cases_boot_m3)
+  list(boot_m3)
+
+list_case_m1 <- 
+  list(boot_m1)
+
+list_case_m4 <- 
+  list(boot_m4)
 ```
 
 # extracting bootstrapped coefficients
 
 ```{r paged.print=TRUE}
+
+ci_boot_m1 <-
+  list_case_m1 %>%
+  map(confint, type = "norm")
+
+ci_boot_m1
+
 ci_boot_m2 <-
   list_case_m2 %>%
   map(confint, type = "norm")
-
 
 # boot_data_m2 <- 
 #   data.frame(ci_boot_m2)
@@ -153,38 +236,72 @@ ci_boot_m2 <-
 # write.xlsx(boot_data_m2, "boot_data_m2.xlsx")
 
 ci_boot_m2
-```
 
-
-```{r paged.print=TRUE}
 ci_boot_m3 <-
   list_case_m3 %>%
   map(confint, type = "norm")
 
 ci_boot_m3
-```
 
 
-```{r paged.print=TRUE}
+ci_boot_m4 <-
+  list_case_m4 %>%
+  map(confint, type = "norm")
 
-
-
+ci_boot_m4
 ```
 
 # visualizing bootstrap results
 
-## main effects (prediction of PLE)
-### Model 2
+### model 1
 
 ```{r echo=TRUE}
 # extracting results into a tibble
+boot_dat_mod_1_main <- 
+  list_case_m1 %>% 
+  map("replicates") %>% 
+  
+map(
+    ~tibble(
+    #  perceived_distress = na.omit(.x$stressor_sum_centered_int),
+      pos_sch = na.omit(.x$mss_pos_score),
+      neg_sch = na.omit(.x$mss_neg_score)
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_1_main_long <- 
+  boot_dat_mod_1_main %>% 
+  pivot_longer(c(pos_sch, neg_sch), names_to = "predictor", values_to = "value")
+
+boot_dat_mod_1_inter <- 
+  list_case_m1 %>% 
+  map("replicates") %>% 
+  map(
+    ~tibble(
+      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score")
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_1_inter_long <- 
+  boot_dat_mod_1_inter %>% 
+  pivot_longer(c(pos_sch, neg_sch), names_to = "predictor", values_to = "value")
+```
+
+### model 2
+
+```{r echo=TRUE}
 boot_dat_mod_2_main <- 
   list_case_m2 %>% 
   map("replicates") %>% 
   
 map(
     ~tibble(
-      perceived_distress = na.omit(.x$event_unpleasantness_centered),
+    #  perceived_distress = na.omit(.x$stressor_sum_centered_int),
       pos_sch = na.omit(.x$mss_pos_score),
       neg_sch = na.omit(.x$mss_neg_score),
       dis_sch = na.omit(.x$mss_dis_score)
@@ -192,11 +309,105 @@ map(
   ) %>%
   bind_rows()
 
-
 # rearranging tibble format
 boot_dat_mod_2_main_long <- 
   boot_dat_mod_2_main %>% 
-  pivot_longer(c(perceived_distress, pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+
+boot_dat_mod_2_inter <- 
+  list_case_m2 %>% 
+  map("replicates") %>% 
+  map(
+    ~tibble(
+      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
+      dis_sch = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_2_inter_long <- 
+  boot_dat_mod_2_inter %>% 
+  pivot_longer(c(neg_sch, pos_sch, dis_sch), names_to = "predictor", values_to = "value")
+```
+
+### model 3
+
+```{r echo=TRUE}
+boot_dat_mod_3_main <- 
+  list_case_m3 %>% 
+  map("replicates") %>% 
+  
+map(
+    ~tibble(
+    #  perceived_distress = na.omit(.x$stressor_sum_centered_int),
+      pos_sch = na.omit(.x$mss_pos_score),
+      neg_sch = na.omit(.x$mss_neg_score),
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_3_main_long <- 
+  boot_dat_mod_3_main %>% 
+  pivot_longer(c(pos_sch, neg_sch), names_to = "predictor", values_to = "value")
+
+boot_dat_mod_3_inter <- 
+  list_case_m3 %>% 
+  map("replicates") %>% 
+  map(
+    ~tibble(
+      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_3_inter_long <- 
+  boot_dat_mod_3_inter %>% 
+  pivot_longer(c(neg_sch, pos_sch), names_to = "predictor", values_to = "value")
+```
+
+### model 4
+
+```{r echo=TRUE}
+boot_dat_mod_4_main <- 
+  list_case_m4 %>% 
+  map("replicates") %>% 
+  
+map(
+    ~tibble(
+    #  perceived_distress = na.omit(.x$stressor_sum_centered_int),
+      pos_sch = na.omit(.x$mss_pos_score),
+      neg_sch = na.omit(.x$mss_neg_score),
+      dis_sch = na.omit(.x$mss_dis_score)
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_4_main_long <- 
+  boot_dat_mod_4_main %>% 
+  pivot_longer(c(pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+
+boot_dat_mod_4_inter <- 
+  list_case_m4 %>% 
+  map("replicates") %>% 
+  map(
+    ~tibble(
+      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
+      dis_sch = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_4_inter_long <- 
+  boot_dat_mod_4_inter %>% 
+  pivot_longer(c(neg_sch, pos_sch, dis_sch), names_to = "predictor", values_to = "value")
 ```
 
 
@@ -209,42 +420,185 @@ colors <- brewer.pal(4, "Dark2")
 
 ```
 
+```{r}
+
+# quantiles_95 <- function(x) {
+#   r <- quantile(x, probs=c(0.05, 0.25, 0.5, 0.75, 0.95))
+#   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+#   r
+# }
+# 
+# # qvant <- 
+#   boot_dat_mod_1_main_long %>% 
+#   group_by(predictor) %>% 
+#   summarise(qvant = quantiles_95(value)) %>% 
+#     view()
+
+# qvant <- as.data.frame(quantiles_95(boot_dat_mod_1_main_long$value))
+
+ggplot(boot_dat_mod_1_main_long, aes(x = predictor, y = value, fill = predictor)) +
+	geom_rain(#rain.side = 'l',
+	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  point.args = list(alpha = .15),
+	  violin.args = list(alpha = .5, color = NA)) +
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  coord_flip() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
+```
+
+```{r}
+
+ggplot(boot_dat_mod_1_inter_long, aes(x = predictor, y = value, fill = predictor)) +
+geom_rain(#rain.side = 'l',
+	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  point.args = list(alpha = .15),
+	  violin.args = list(alpha = .5, color = NA)) +
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  coord_flip() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
+```
+
+```{r}
+
+ggplot(boot_dat_mod_2_main_long, aes(x = predictor, y = value, fill = predictor)) +
+	geom_rain(#rain.side = 'l',
+	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  point.args = list(alpha = .15),
+	  violin.args = list(alpha = .5, color = NA)) +
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  coord_flip() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
+```
+
+
+```{r}
+
+ggplot(boot_dat_mod_2_inter_long, aes(x = predictor, y = value, fill = predictor)) +
+geom_rain(#rain.side = 'l',
+	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  point.args = list(alpha = .15),
+	  violin.args = list(alpha = .5, color = NA)) +
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  coord_flip() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
+```
+
+```{r}
+
+ggplot(boot_dat_mod_3_main_long, aes(x = predictor, y = value, fill = predictor)) +
+	geom_rain(#rain.side = 'l',
+	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  point.args = list(alpha = .15),
+	  violin.args = list(alpha = .5, color = NA)) +
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  coord_flip() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
+```
+
+```{r}
+
+ggplot(boot_dat_mod_3_inter_long, aes(x = predictor, y = value, fill = predictor)) +
+  geom_rain(#rain.side = 'l',
+	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  point.args = list(alpha = .15),
+	  violin.args = list(alpha = .5, color = NA)) +
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  coord_flip() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
+```
+
+```{r}
+
+ggplot(boot_dat_mod_4_main_long, aes(x = predictor, y = value, fill = predictor)) +
+	geom_rain(#rain.side = 'l',
+	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  point.args = list(alpha = .15),
+	  violin.args = list(alpha = .5, color = NA)) +
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  coord_flip() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
+```
+
+
+```{r}
+
+ggplot(boot_dat_mod_4_inter_long, aes(x = predictor, y = value, fill = predictor)) +
+	geom_rain(#rain.side = 'l',
+	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  point.args = list(alpha = .15),
+	  violin.args = list(alpha = .5, color = NA)) +
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  coord_flip() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
+```
 
 ```{r echo=TRUE}
 # plotting
 plot_m2_main <- 
   boot_dat_mod_2_main_long %>% 
   ggplot(aes(value, fill = predictor)) +
-     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
-     geom_density(alpha = .5, color = NA) + #, show.legend = FALSE) +
+     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7) + 
+     geom_density(alpha = .5, color = NA, show.legend = FALSE) +
      labs(
-       x  = "Prediction of PLEs in Model 2",
+       x  = "", #"Prediction of PLEs in Model 2",
        y = "Density",
        fill = "",
        title = "",
        ) +
      scale_fill_manual(values = colors,
-                      labels = c("disorganized sch",  "negative sch",  "perceived distress", "positive sch")) +
+                      labels = c("disorganized sch",  "negative sch",  "distress", "positive sch")) +
     scale_x_continuous(limits = c(-0.5, 1), breaks = seq(from = -0.5, to = 1, by = 0.25)) +
 
 
-  theme_classic()
+  theme_classic() +
+  theme(
+  #  legend.position = "bottom",
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12))
 
 plot_m2_main
+
+# ggsave("ducog_1.jpeg", device = "jpeg", width = 20, height = 8, units = "cm", )
+
 ```
 
 ### Model 3
 
 ```{r echo=TRUE}
 # extracting results into a tibble
-boot_dat_mod_3_main <- 
-  list_case_m3 %>% 
+boot_dat_mod_2_main <- 
+  list_case_m2 %>% 
   map("replicates") %>%
   
 map(
     ~tibble(
-      lagged_PLEs = na.omit(.x$ple_cfa_centered_lag),
-      perceived_distress = na.omit(.x$event_unpleasantness_centered),
+      perceived_distress = na.omit(.x$stressor_sum_centered_int),
       pos_sch = na.omit(.x$mss_pos_score),
       neg_sch = na.omit(.x$mss_neg_score),
       dis_sch = na.omit(.x$mss_dis_score)
@@ -254,26 +608,26 @@ map(
 
 
 # rearranging tibble format
-boot_dat_mod_3_main_long <- 
-  boot_dat_mod_3_main %>% 
-  pivot_longer(c(lagged_PLEs, perceived_distress, pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+boot_dat_mod_2_main_long <- 
+  boot_dat_mod_2_main %>% 
+  pivot_longer(c(perceived_distress, pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
 
 
 # plotting
-plot_m3_main <- 
-  boot_dat_mod_3_main_long %>% 
+plot_m2_main <- 
+  boot_dat_mod_2_main_long %>% 
   ggplot(aes(value, fill = predictor)) +
-     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
+     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7) + 
      geom_density(alpha = .5, color = NA) +
      labs(
-       x    = "Prediction of PLEs in Model 3",
+       x    =  "", #"Prediction of PLEs in Model 3",
        y = "",
        fill = "",
        title    = ""
        ) +
   theme_classic()
 
-plot_m3_main
+plot_m2_main
 ```
 ## interactions (moderation of PLE reactivity)
 ### Model 2
@@ -281,33 +635,17 @@ plot_m3_main
 ```{r echo=TRUE}
 
 # extracting results into a tibble
-boot_dat_mod_2_inter <- 
-  list_case_m2 %>% 
-  map("replicates") %>% 
-  map(
-    ~tibble(
-      mss_neg = na.omit(.x$"event_unpleasantness_centered:mss_neg_score"),
-      mss_pos = na.omit(.x$"event_unpleasantness_centered:mss_pos_score"),
-      mss_dis = na.omit(.x$"event_unpleasantness_centered:mss_dis_score")
-    )
-  ) %>%
-  bind_rows()
 
-
-# rearranging tibble format
-boot_dat_mod_2_inter_long <- 
-  boot_dat_mod_2_inter %>% 
-  pivot_longer(c(mss_neg, mss_pos, mss_dis), names_to = "sch_traits", values_to = "value")
 
 
 # plotting
 plot_m2_inter <- 
   boot_dat_mod_2_inter_long %>% 
   ggplot(aes(value, fill = sch_traits)) +
-     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
+     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7) + 
      geom_density(alpha = .5, color = NA, show.legend = FALSE) +
    labs(
-       x = bquote("Prediction of " ~ italic("PLE reactivity") ~ "in Model 2"),
+       x = "", # bquote("Prediction of " ~ italic("PLE reactivity") ~ "in Model 2"),
        y = "Density",
        fill = "",
       # title = "Bootstrapped estimates of main and interaction effects",
@@ -316,9 +654,18 @@ plot_m2_inter <-
                       labels = c("disorganized sch",  "negative sch", "positive sch")) +
   scale_x_continuous(limits = c(-0.5, 1), breaks = seq(from = -0.5, to = 1, by = 0.25)) +
 
-  theme_classic()
+  theme_classic() +
+  theme(
+  #  legend.position = "bottom",
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12))
      
 plot_m2_inter
+
+ggsave("ducog_2.jpeg", device = "jpeg", width = 20, height = 8, units = "cm", )
+
 ```
 
 
@@ -330,9 +677,9 @@ boot_dat_mod_3_inter <-
   map("replicates") %>% 
   map(
     ~tibble(
-      mss_neg = na.omit(.x$"event_unpleasantness_centered:mss_neg_score"),
-      mss_pos = na.omit(.x$"event_unpleasantness_centered:mss_pos_score"),
-      mss_dis = na.omit(.x$"event_unpleasantness_centered:mss_dis_score")
+      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
+      dis_sch = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
     )
   ) %>%
   bind_rows()
@@ -341,14 +688,14 @@ boot_dat_mod_3_inter <-
 # rearranging tibble format
 boot_dat_mod_3_inter_long <- 
   boot_dat_mod_3_inter %>% 
-  pivot_longer(c(mss_neg, mss_pos, mss_dis), names_to = "sch_traits", values_to = "value")
+  pivot_longer(c(neg_sch, pos_sch, dis_sch), names_to = "predictor", values_to = "value")
 
 
 # plotting
 plot_m3_inter <- 
   boot_dat_mod_3_inter_long %>% 
   ggplot(aes(value, fill = sch_traits)) +
-     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .5, size = 1) + 
+     geom_vline(xintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7) + 
      geom_density(alpha = .5, color = NA, show.legend = FALSE) +
      labs(
        x    = "Prediction of PLE REACTIVITY in Model 3",
@@ -361,16 +708,21 @@ plot_m3_inter <-
 plot_m3_inter
 ```
 
-```{r, fig.height=4, fig.width=5}
+```{r}
+
+#, fig.height=4, fig.width=5}
 
    plot_m2_inter/ plot_m2_main  &
    plot_layout(guides = 'collect') &
   theme_classic() +
   theme(
     legend.position = "bottom",
-    axis.title = element_text(size = 10),
-    axis.text = element_text(size = 10),
-    legend.title = element_text(size = 10),
-    legend.text = element_text(size = 10))
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12))
+
+ggsave("ducog_main.jpeg", device = "jpeg", width = 30, height = 20, units = "cm", )
+
 ```
 

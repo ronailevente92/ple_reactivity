@@ -47,11 +47,11 @@ dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 
 model_dat <- read.csv("data_processed/model_dat.csv")
 
-# model_dat <- 
-#   model_dat %>%
-#   filter_at(vars(event_unpleasantness_centered:ple_cfa_centered, negaff_cfa_centered_lag), all_vars(!is.na(.)))
-
+model_dat <- 
+  model_dat %>% 
+  mutate(stressor_sum_centered_int = stressor_sum_centered * -1)
 ```
+
 
 ```{r}
 
@@ -94,7 +94,44 @@ model_dat %>%
   geom_smooth() + 
   lims(x = c(1, 20)) + 
   facet_wrap(~cog_task)
+
+ggsave("esm.jpeg", device = "jpeg", width = 20, height = 12, units = "cm", )
+
 ```
+
+```{r, fig.height=5, fig.width=5}
+model_dat %>% 
+  pivot_longer(names_to = "affect", cols = c(posaff_cfa, negaff_cfa, ), values_to = "score" ) %>% 
+  group_by(day, id_esm, affect) %>% 
+  summarise(score = mean(score, na.rm = T)) %>% 
+  ungroup() %>% 
+  mutate(has_data = ifelse(!is.na(score),
+                           1,
+                           0)) %>% 
+  group_by(id_esm) %>%
+  mutate(n_data = sum(as.numeric(has_data))) %>% 
+  select(-has_data) %>% 
+  filter(n_data > 49 & id_esm > 150 & id_esm < 180) %>% 
+  ggplot(aes(day, score)) + 
+  geom_point(aes(color = affect), alpha = .7, size = 2) + 
+  geom_line(aes(group = id_esm), alpha = .4) + 
+#  geom_smooth() + 
+  lims(x = c(1, 28)) + 
+  facet_wrap(~id_esm+affect, ncol = 2)  +
+  theme_bw() +
+  theme(
+  #  legend.position = "bottom",
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12))
+ # facet_grid(~id_esm)
+
+ggsave("esm_aff.jpeg", device = "jpeg", width = 20, height = 20, units = "cm", )
+
+```
+
+
 ```{r}
 model_dat %>% 
   pivot_longer(names_to = "cog_task", cols = c(nback_dprime, gonogo_dprime), values_to = "dprime" ) %>% 
@@ -114,16 +151,17 @@ model_dat %>%
 
 corr_cog <- 
   model_dat %>% 
-  dplyr::select(id_esm, nback_dprime_grand_centered, gonogo_dprime_grand_centered, mss_dis_score) %>% 
+  dplyr::select(id_esm, stressor_sum, event_unpleasantness_centered, mss_dis_score) %>% 
+  mutate(stressor_sum = stressor_sum * -1) %>% 
   distinct()
 
-shapiro.test(corr_cog$nback_dprime_grand_centered)
-shapiro.test(corr_cog$gonogo_dprime_grand_centered)
+shapiro.test(corr_cog$stressor_sum)
+shapiro.test(corr_cog$event_unpleasantness_centered)
 shapiro.test(corr_cog$mss_dis_score)
 # normality not assumed
 
-cor.test(corr_cog$mss_dis_score, corr_cog$nback_dprime_grand_centered, method = "spearman")
-cor.test(corr_cog$mss_dis_score, corr_cog$gonogo_dprime_grand_centered, method = "spearman")
+cor.test(corr_cog$mss_dis_score, corr_cog$stressor_sum, method = "spearman")
+# cor.test(corr_cog$mss_dis_score, corr_cog$stressor_sum_centered_int, method = "spearman")
 
 # ci_cor(corr_cog, probs = c(0.025, 0.975), method = "spearman", type = "bootstrap", boot_type = "basic")
 # 
@@ -132,14 +170,14 @@ cor.test(corr_cog$mss_dis_score, corr_cog$gonogo_dprime_grand_centered, method =
   # mutate(mss_dis_score_log = log10(mss_dis_score + 2),
   #        ple_between_log = log10(ple_between + 2))
 
-# ggplot(corr_cog, aes(mss_dis_score_sqrt, nback_dprime_grand_centered)) +
-#   geom_point(alpha = 0.5, position = "jitter") +
-#   geom_smooth(method = "lm", fill = "#8fb9dc", color = "#609CCE") +
-#   theme_classic() +
-#   # labs(x = "Trait rumination",
-#   #      y = "Mean state rumination"
-#   # ) +
-#   theme(axis.title = element_text(size = 12))
+ggplot(corr_cog, aes(mss_dis_score, stressor_sum)) +
+  geom_point(alpha = 0.5, position = "jitter") +
+  geom_smooth(method = "lm", fill = "#8fb9dc", color = "#609CCE") +
+  theme_classic() +
+  # labs(x = "Trait rumination",
+  #      y = "Mean state rumination"
+  # ) +
+  theme(axis.title = element_text(size = 12))
 
 # ggplot(corr_cog, aes(mss_dis_score, nback_dprime_grand_centered)) +
 #   geom_point(alpha = 0.5, position = "jitter") +
@@ -207,9 +245,9 @@ summary(mod_ple_wm_inh)
 
 ```{r}
 
-# model_dat <-
-#   model_dat %>%
-#   mutate(ple_log = log10(ple_cfa+3),
+model_dat <-
+  model_dat %>%
+  mutate(ple_log = log10(ple_cfa+3))
 #          negaff_log = log10(negaff_cfa+3),
 #          event_unpleasantness_centered_log10 = log10(event_unpleasantness_centered+4))
 
@@ -220,10 +258,10 @@ summary(mod_ple_wm_inh)
 ```{r}
 m0 <- 
   lmer(
-     ple_cfa ~ 
+     ple_log ~ 
       day + beep + gender + age +
-      event_unpleasantness_centered + 
-      (event_unpleasantness_centered | id_esm), data = model_dat)
+      stressor_sum_centered_int + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
 
 
 tab_model(m0, show.aicc = T, show.std = T)
@@ -233,23 +271,76 @@ saveRDS(m0, "models/m0.rds")
 
 ```
 
+```{r}
+m0_alt <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+
+tab_model(m0_alt, show.aicc = T, show.std = T)
+plot_model(m0_alt, type = "diag")
+
+saveRDS(m0_alt, "models/m0_alt.rds")
+
+```
 
 ```{r}
+m3 <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int * mss_neg_score +
+      stressor_sum_centered_int * mss_pos_score +
+    #  stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+
+tab_model(m3, show.aicc = T, show.std = T)
+plot_model(m3, type = "diag")
+
+saveRDS(m3, "models/m3.rds")
+
+```
+
+```{r}
+m4 <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int * mss_neg_score +
+      stressor_sum_centered_int * mss_pos_score +
+      stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+
+tab_model(m4, show.aicc = T, show.std = T)
+plot_model(m4, type = "int")
+
+saveRDS(m4, "models/m4.rds")
+
+```
+
+```{r}
+
+
 m1 <- 
   lmer(
-    ple_cfa ~ 
+    ple_log ~ 
       day + beep + gender + age +
-      event_unpleasantness_centered * mss_neg_score  +
-      event_unpleasantness_centered * mss_pos_score  +
-     # event_unpleasantness_centered * mss_dis_score  +
+      stressor_sum_centered_int * mss_neg_score  +
+      stressor_sum_centered_int * mss_pos_score  +
+    #  stressor_sum_centered_int * mss_dis_score  +
 
     #  ple_cfa_centered_lag + 
 
-      (event_unpleasantness_centered | id_esm), data = model_dat)
+      (stressor_sum_centered_int | id_esm), data = model_dat)
 
 
 tab_model(m1, show.aicc = T, show.std = T)
-plot_model(m1, type = "int")
+plot_model(m1, type = "diag")
 
 saveRDS(m1, "models/m1.rds")
 
@@ -259,15 +350,16 @@ saveRDS(m1, "models/m1.rds")
 ```{r}
 m2 <- 
   lmer(
-    ple_cfa ~ 
+    ple_log ~ 
       day + beep + gender + age +
-      event_unpleasantness_centered * mss_neg_score  +
-      event_unpleasantness_centered * mss_pos_score  +
-      event_unpleasantness_centered * mss_dis_score  +
+       stressor_sum_centered_int * mss_neg_score  +
+       stressor_sum_centered_int * mss_pos_score  +
+       stressor_sum_centered_int * mss_dis_score  +
 
-#      ple_cfa_centered_lag + 
+     # ple_cfa_centered_lag + 
 
-      (event_unpleasantness_centered | id_esm), data = model_dat)
+      (stressor_sum_centered_int  | id_esm), data = model_dat)
+
 
 
 tab_model(m2, show.aicc = T, show.std = T)

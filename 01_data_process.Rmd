@@ -134,8 +134,8 @@ big_data <-
 dat_cleaned <- 
   big_data %>% 
   select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_cogtask,
-         day, beep, event_pleasantness, sad:active, homeo_hungry, coffee, alcohol,
-         contains(c("gonogo", "nback", "mzq_", "mss_", "ple_")), -contains(c("minutes")))
+         day, beep, event_pleasantness, sad:active, homeo_hungry, coffee, alcohol, 
+         contains(c("gonogo", "nback", "mzq_", "mss_", "ple_", "stressor")), -contains(c("minutes")))
 
 ```
 
@@ -680,7 +680,7 @@ dat_cleaned <-
 dat_cleaned <- 
   dat_cleaned %>% 
   group_by(id_esm) %>%
-  mutate_at(vars(gonogo_dprime, nback_dprime, gonogo_corr_rt_median,
+  mutate_at(vars(gonogo_dprime, nback_dprime, gonogo_corr_rt_median, stressor_sum,
                  nback_corr_rt_median, negaff_cfa, posaff_cfa, ple_cfa, event_unpleasantness, event_pleasantness, ambivalence),
             .funs = list(centered = ~ scale(., scale = F, center = T))) %>% 
   distinct()
@@ -803,7 +803,7 @@ model_dat <-
          ple_control, ple_strange, ple_thoughts,
          ple_suspicion, ple_treatment, ple_thougtscontrol, ple_sum,
 
-         contains(c("_mean", "_lag")),
+         contains(c("_mean", "_lag", "stressor_sum")),
          mss_dis, mss_pos, mss_neg, 
          mss_dis_score, mss_pos_score, 
          mss_neg_score, 
