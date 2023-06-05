@@ -13,6 +13,7 @@ suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(confintr))
 suppressPackageStartupMessages(library(rstatix))
+suppressPackageStartupMessages(library(ggrain))
 
 
 options(scipen = 999)
@@ -574,31 +575,37 @@ ple_cfa_figure <- model_dat %>%
   select(id_esm, day, beep, ple_cfa) %>%
   filter(!is.na(ple_cfa))
 
-visu_ple_cfa <- ggplot(ple_cfa_figure) +
+# histogram
+hist_ple_cfa <- ggplot(ple_cfa_figure) +
   geom_histogram(aes(ple_cfa), bins = 30, fill = "#A9A9A9") +   #, color = "#797979") +
   theme_classic() +
   labs(
     x = "PLE factor score",
     y = "Number of cases"
   ) +
+  scale_x_continuous(breaks=seq(-4,10,2)) +
   theme(axis.title = element_text(size = 12))
 
-visu_ple_cfa
+hist_ple_cfa
 
-# distribution of log-transformed PLE CFA scores
-ple_cfa_figure <- ple_cfa_figure %>% 
-  mutate(ple_cfa_log = log10(ple_cfa + 3))
-
-visu_ple_cfa_log <- ggplot(ple_cfa_figure) +
-  geom_histogram(aes(ple_cfa_log), bins = 30, fill = "#A9A9A9") +  #, color = "#797979") +
-  theme_classic() +
-  labs(
-    x = "PLE factor score (log10-transformed)",
-    y = "Number of cases"
-  ) +
-#  theme_bw() + 
-  theme(axis.title = element_text(size = 12))
-
-visu_ple_cfa_log
+# # raincloud plot
+# raincloud_ple_cfa <-ggplot(ple_cfa_figure, aes(1, ple_cfa)) +
+#   geom_rain(
+#     alpha = .3
+#     ) +
+#   theme_classic() +
+#   labs(
+#     y = "PLE factor score",
+#     x = ""
+#   ) +
+#   scale_y_continuous(breaks=seq(-4,10,2)) +
+#   theme(
+#     axis.title = element_text(size = 12),
+#     axis.ticks.y = element_blank(),
+#     axis.text.y = element_blank()
+#     ) +
+#   coord_flip()
+# 
+# raincloud_ple_cfa
 ```
 
