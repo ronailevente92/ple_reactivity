@@ -135,7 +135,7 @@ dat_cleaned <-
   big_data %>% 
   select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_cogtask,
          day, beep, event_pleasantness, sad:active, homeo_hungry, coffee, alcohol, 
-         contains(c("gonogo", "nback", "mzq_", "mss_", "ple_", "stressor")), -contains(c("minutes")))
+         contains(c("gonogo", "nback", "mzq_", "mss_", "ple_", "stressor", "depr_sum")), -contains(c("minutes")))
 
 ```
 
@@ -173,7 +173,6 @@ dat_cleaned  <-
 # 
 # (parallel <- fa.parallel(prin, fm = "pa"))
 # 
-# 
 # (principal <-
 #     psych::principal(prin, nfactors = 2, rotate = "oblimin"))
 # dat_cleaned <-
@@ -182,29 +181,6 @@ dat_cleaned  <-
 #   mutate(negaff_pca = TC1,
 #          posaff_pca = TC2) %>%
 #   select(-TC1, -TC2)
-
-```
-
-
-```{r}
-
-### parallel analysis of PLE
-
-# prin_ple <-
-#   dat_cleaned %>%
-#   select(ple_control, ple_strange, ple_thoughts, ple_suspicion, ple_treatment, ple_perception, ple_thougtscontrol)
-# 
-# (parallel_ple <- fa.parallel(prin_ple, fm = "pa"))
-# 
-# 
-# (principal_ple <-
-#     psych::principal(prin_ple, nfactors = 1, rotate = "oblimin"))
-# 
-# dat_cleaned <-
-#   dat_cleaned %>%
-#   cbind(as.data.frame(principal_ple$scores)) %>%
-#   mutate(ple = PC1) %>% 
-#   select(-PC1)
 
 ```
 
@@ -789,7 +765,7 @@ model_dat <-
          event_unpleasantness_grand_centered,
          z_event_within_group,
 
-         gonogo_corr_rt_median_centered, nback_corr_rt_median_centered,
+         gonogo_corr_rt_median, gonogo_corr_rt_median_centered, nback_corr_rt_median, nback_corr_rt_median_centered,
          gonogo_dprime_centered, nback_dprime_centered,
          gonogo_dprime_grand_centered,
          nback_dprime_grand_centered,
@@ -803,7 +779,7 @@ model_dat <-
          ple_control, ple_strange, ple_thoughts,
          ple_suspicion, ple_treatment, ple_thougtscontrol, ple_sum,
 
-         contains(c("_mean", "_lag", "stressor_sum")),
+         contains(c("_mean", "_lag", "stressor_sum", "depr")),
          mss_dis, mss_pos, mss_neg, 
          mss_dis_score, mss_pos_score, 
          mss_neg_score, 

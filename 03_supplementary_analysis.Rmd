@@ -13,7 +13,7 @@ editor_options:
 
 # loading packages
 
-```{r}
+```{r, message=F}
 library(tidyverse)
 library(sjPlot)
 library(lme4)
@@ -59,7 +59,18 @@ m4 <- readRDS("models/m4.rds")
 ```
 
 ```{r}
+model_dat %>% 
+  filter(!is.na(stressor_sum) & !is.na(ple_cfa)) %>% 
+  select(id_esm, age) %>% 
+  distinct() %>% 
+  summarise(median(age), sd(age))
+```
 
+
+```{r}
+
+
+tab_model(m0, m0_alt, show.aicc = T, show.std = T)
 tab_model(m1, m2, show.aicc = T, show.std = T)
 tab_model(m3, m4, show.aicc = T, show.std = T)
 
@@ -137,58 +148,87 @@ lillie.test(m4_residuals)
 # bootstrapping
 
 ```{r}
-boot_m1 <-
-  bootstrap(
-    m1,
-    .f = fixef,
-    type = "wild",
-    hccme =  "hc2",
-    aux.dist = "mammen",
-    B = 5000 ,
-    resample = c(TRUE, TRUE)
-  )
-saveRDS(boot_m1, "models/boot_m1.rds")
+# boot_m0 <-
+#   bootstrap(
+#     m0,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# saveRDS(boot_m0, "models/boot_m0.rds")
+# 
+# 
+# boot_m0_alt <-
+#   bootstrap(
+#     m0_alt,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# saveRDS(boot_m0_alt, "models/boot_m0_alt.rds")
 
-
-boot_m2 <-
-  bootstrap(
-    m2,
-    .f = fixef,
-    type = "wild",
-    hccme =  "hc2",
-    aux.dist = "mammen",
-    B = 5000 ,
-    resample = c(TRUE, TRUE)
-  )
-saveRDS(boot_m2, "models/boot_m2.rds")
 ```
 
 
 ```{r}
-boot_m3 <-
-  bootstrap(
-    m3,
-    .f = fixef,
-    type = "wild",
-    hccme =  "hc2",
-    aux.dist = "mammen",
-    B = 5000 ,
-    resample = c(TRUE, TRUE)
-  )
-saveRDS(boot_m3, "models/boot_m3.rds")
+# boot_m1 <-
+#   bootstrap(
+#     m1,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# saveRDS(boot_m1, "models/boot_m1.rds")
+# 
+# 
+# boot_m2 <-
+#   bootstrap(
+#     m2,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# saveRDS(boot_m2, "models/boot_m2.rds")
+```
 
 
-boot_m4 <-
-  bootstrap(
-    m4,
-    .f = fixef,
-    type = "wild",
-    hccme =  "hc2",
-    aux.dist = "mammen",
-    B = 5000 ,
-    resample = c(TRUE, TRUE)
-  )
-saveRDS(boot_m4, "models/boot_m4.rds")
+```{r}
+# boot_m3 <-
+#   bootstrap(
+#     m3,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# saveRDS(boot_m3, "models/boot_m3.rds")
+# 
+# 
+# boot_m4 <-
+#   bootstrap(
+#     m4,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# saveRDS(boot_m4, "models/boot_m4.rds")
 
 
 ```
@@ -196,11 +236,20 @@ saveRDS(boot_m4, "models/boot_m4.rds")
 # reading bootstrap file and extracting results into a list
 
 ```{r}
+
+boot_m0 <-  readRDS("models/boot_m0.rds")
+boot_m0_alt <-  readRDS("models/boot_m0_alt.rds")
 boot_m2 <- readRDS("models/boot_m2.rds")
 boot_m3 <- readRDS("models/boot_m3.rds")
 boot_m1 <- readRDS("models/boot_m1.rds")
 boot_m4 <- readRDS("models/boot_m4.rds")
 
+
+list_case_m0 <- 
+  list(boot_m0)
+
+list_case_m0_alt <- 
+  list(boot_m0_alt)
 
 list_case_m2 <- 
   list(boot_m2)
@@ -218,6 +267,18 @@ list_case_m4 <-
 # extracting bootstrapped coefficients
 
 ```{r paged.print=TRUE}
+
+ci_boot_m0 <-
+  list_case_m0 %>%
+  map(confint, type = "norm")
+
+ci_boot_m0
+
+ci_boot_m0_alt <-
+  list_case_m0_alt %>%
+  map(confint, type = "norm")
+
+ci_boot_m0_alt
 
 ci_boot_m1 <-
   list_case_m1 %>%
@@ -264,8 +325,8 @@ boot_dat_mod_1_main <-
 map(
     ~tibble(
     #  perceived_distress = na.omit(.x$stressor_sum_centered_int),
-      pos_sch = na.omit(.x$mss_pos_score),
-      neg_sch = na.omit(.x$mss_neg_score)
+      Positive = na.omit(.x$mss_pos_score),
+      Negative = na.omit(.x$mss_neg_score)
     )
   ) %>%
   bind_rows()
@@ -273,15 +334,15 @@ map(
 # rearranging tibble format
 boot_dat_mod_1_main_long <- 
   boot_dat_mod_1_main %>% 
-  pivot_longer(c(pos_sch, neg_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Positive, Negative), names_to = "predictor", values_to = "value")
 
 boot_dat_mod_1_inter <- 
   list_case_m1 %>% 
   map("replicates") %>% 
   map(
     ~tibble(
-      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
-      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score")
+      Positive = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      Negative = na.omit(.x$"stressor_sum_centered_int:mss_pos_score")
     )
   ) %>%
   bind_rows()
@@ -289,7 +350,7 @@ boot_dat_mod_1_inter <-
 # rearranging tibble format
 boot_dat_mod_1_inter_long <- 
   boot_dat_mod_1_inter %>% 
-  pivot_longer(c(pos_sch, neg_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Positive, Negative), names_to = "predictor", values_to = "value")
 ```
 
 ### model 2
@@ -302,9 +363,9 @@ boot_dat_mod_2_main <-
 map(
     ~tibble(
     #  perceived_distress = na.omit(.x$stressor_sum_centered_int),
-      pos_sch = na.omit(.x$mss_pos_score),
-      neg_sch = na.omit(.x$mss_neg_score),
-      dis_sch = na.omit(.x$mss_dis_score)
+      Positive = na.omit(.x$mss_pos_score),
+      Negative = na.omit(.x$mss_neg_score),
+      Disorganized = na.omit(.x$mss_dis_score)
     )
   ) %>%
   bind_rows()
@@ -312,16 +373,16 @@ map(
 # rearranging tibble format
 boot_dat_mod_2_main_long <- 
   boot_dat_mod_2_main %>% 
-  pivot_longer(c(pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Positive, Negative, Disorganized), names_to = "predictor", values_to = "value")
 
 boot_dat_mod_2_inter <- 
   list_case_m2 %>% 
   map("replicates") %>% 
   map(
     ~tibble(
-      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
-      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
-      dis_sch = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
+      Negative = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      Positive = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
+      Disorganized = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
     )
   ) %>%
   bind_rows()
@@ -329,7 +390,7 @@ boot_dat_mod_2_inter <-
 # rearranging tibble format
 boot_dat_mod_2_inter_long <- 
   boot_dat_mod_2_inter %>% 
-  pivot_longer(c(neg_sch, pos_sch, dis_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Negative, Positive, Disorganized), names_to = "predictor", values_to = "value")
 ```
 
 ### model 3
@@ -342,8 +403,8 @@ boot_dat_mod_3_main <-
 map(
     ~tibble(
     #  perceived_distress = na.omit(.x$stressor_sum_centered_int),
-      pos_sch = na.omit(.x$mss_pos_score),
-      neg_sch = na.omit(.x$mss_neg_score),
+      Positive = na.omit(.x$mss_pos_score),
+      Negative = na.omit(.x$mss_neg_score),
     )
   ) %>%
   bind_rows()
@@ -351,15 +412,15 @@ map(
 # rearranging tibble format
 boot_dat_mod_3_main_long <- 
   boot_dat_mod_3_main %>% 
-  pivot_longer(c(pos_sch, neg_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Positive, Negative), names_to = "predictor", values_to = "value")
 
 boot_dat_mod_3_inter <- 
   list_case_m3 %>% 
   map("replicates") %>% 
   map(
     ~tibble(
-      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
-      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
+      Negative = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      Positive = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
     )
   ) %>%
   bind_rows()
@@ -367,7 +428,7 @@ boot_dat_mod_3_inter <-
 # rearranging tibble format
 boot_dat_mod_3_inter_long <- 
   boot_dat_mod_3_inter %>% 
-  pivot_longer(c(neg_sch, pos_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Negative, Positive), names_to = "predictor", values_to = "value")
 ```
 
 ### model 4
@@ -380,9 +441,9 @@ boot_dat_mod_4_main <-
 map(
     ~tibble(
     #  perceived_distress = na.omit(.x$stressor_sum_centered_int),
-      pos_sch = na.omit(.x$mss_pos_score),
-      neg_sch = na.omit(.x$mss_neg_score),
-      dis_sch = na.omit(.x$mss_dis_score)
+      Positive = na.omit(.x$mss_pos_score),
+      Negative = na.omit(.x$mss_neg_score),
+      Disorganized = na.omit(.x$mss_dis_score)
     )
   ) %>%
   bind_rows()
@@ -390,16 +451,16 @@ map(
 # rearranging tibble format
 boot_dat_mod_4_main_long <- 
   boot_dat_mod_4_main %>% 
-  pivot_longer(c(pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Positive, Negative, Disorganized), names_to = "predictor", values_to = "value")
 
 boot_dat_mod_4_inter <- 
   list_case_m4 %>% 
   map("replicates") %>% 
   map(
     ~tibble(
-      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
-      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
-      dis_sch = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
+      Negative = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      Positive = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
+      Disorganized = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
     )
   ) %>%
   bind_rows()
@@ -407,7 +468,7 @@ boot_dat_mod_4_inter <-
 # rearranging tibble format
 boot_dat_mod_4_inter_long <- 
   boot_dat_mod_4_inter %>% 
-  pivot_longer(c(neg_sch, pos_sch, dis_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Negative, Positive, Disorganized), names_to = "predictor", values_to = "value")
 ```
 
 
@@ -418,23 +479,11 @@ display.brewer.all()
 
 colors <- brewer.pal(4, "Dark2")
 
+
+colors
 ```
 
 ```{r}
-
-# quantiles_95 <- function(x) {
-#   r <- quantile(x, probs=c(0.05, 0.25, 0.5, 0.75, 0.95))
-#   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
-#   r
-# }
-# 
-# # qvant <- 
-#   boot_dat_mod_1_main_long %>% 
-#   group_by(predictor) %>% 
-#   summarise(qvant = quantiles_95(value)) %>% 
-#     view()
-
-# qvant <- as.data.frame(quantiles_95(boot_dat_mod_1_main_long$value))
 
 ggplot(boot_dat_mod_1_main_long, aes(x = predictor, y = value, fill = predictor)) +
 	geom_rain(#rain.side = 'l',
@@ -468,7 +517,7 @@ geom_rain(#rain.side = 'l',
 
 ggplot(boot_dat_mod_2_main_long, aes(x = predictor, y = value, fill = predictor)) +
 	geom_rain(#rain.side = 'l',
-	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
+	  boxplot.args = list(color = NA, fill = NA, alpha = .0, outlier.shape = NA, notch = T),
 	  point.args = list(alpha = .15),
 	  violin.args = list(alpha = .5, color = NA)) +
   theme_classic() +
@@ -476,23 +525,25 @@ ggplot(boot_dat_mod_2_main_long, aes(x = predictor, y = value, fill = predictor)
   guides(fill = 'none', color = 'none') +
   coord_flip() + 
   geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+
 
 ```
 
 
 ```{r}
-
-ggplot(boot_dat_mod_2_inter_long, aes(x = predictor, y = value, fill = predictor)) +
-geom_rain(#rain.side = 'l',
-	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
-	  point.args = list(alpha = .15),
-	  violin.args = list(alpha = .5, color = NA)) +
+boot_plot_1_b <- 
+  ggplot(boot_dat_mod_2_inter_long, aes(x = predictor, y = value, fill = predictor)) +
+  geom_violin(color = NA, alpha = 0.5)+
+  geom_boxplot(width = 0.2, fill = NA, outlier.shape = NA, lwd = 0.6) + 
   theme_classic() +
   scale_fill_brewer(palette = 'Dark2') +
   guides(fill = 'none', color = 'none') +
-  coord_flip() + 
-  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
-
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .4, size = .7) +
+  labs(
+       x  = "",
+       y = "Bootstrapped Est.",
+       title = "",
+       )
 ```
 
 ```{r}
@@ -542,19 +593,156 @@ ggplot(boot_dat_mod_4_main_long, aes(x = predictor, y = value, fill = predictor)
 
 
 ```{r}
-
-ggplot(boot_dat_mod_4_inter_long, aes(x = predictor, y = value, fill = predictor)) +
-	geom_rain(#rain.side = 'l',
-	  boxplot.args = list(alpha = .5, outlier.shape = NA, notch = T),
-	  point.args = list(alpha = .15),
-	  violin.args = list(alpha = .5, color = NA)) +
+boot_plot_2 <- 
+  ggplot(boot_dat_mod_4_inter_long, aes(x = predictor, y = value, fill = predictor)) +
+	 geom_violin(color = NA, alpha = 0.5)+
+  geom_boxplot(width = 0.2, fill = NA, outlier.shape = NA, lwd = 0.6) + 
   theme_classic() +
   scale_fill_brewer(palette = 'Dark2') +
   guides(fill = 'none', color = 'none') +
-  coord_flip() + 
-  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .6, size = .7)
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .4, size = .7) +
+  labs(
+       x  = "",
+       y = "",
+       title = "",
+       )
 
 ```
+
+```{r}
+# neg_m1 <- plot_model(m1, type = "int")[[1]]
+# pos_m1 <- plot_model(m1, type = "int")[[2]]
+
+
+neg_m2 <- plot_model(m2, type = "int")[[1]]
+pos_m2 <- plot_model(m2, type = "int")[[2]]
+dis_m2 <- plot_model(m2, type = "int")[[3]]
+
+
+# neg_m3 <- plot_model(m3, type = "int")[[1]]
+# pos_m3 <- plot_model(m3, type = "int")[[2]]
+
+
+neg_m4 <- plot_model(m4, type = "int")[[1]]
+pos_m4 <- plot_model(m4, type = "int")[[2]]
+dis_m4 <- plot_model(m4, type = "int")[[3]]
+```
+
+
+```{r, warning=F}
+
+dis_m2 <- 
+  dis_m2 +
+  geom_smooth(size = 1.3) +
+  scale_fill_manual(values = c("black", "#1B9E77")) +
+  scale_colour_manual(labels = c("Low", "High"), values = c("black", "#1B9E77")) + 
+  theme_classic() +
+  theme(legend.position='none') +
+
+  labs(
+       x  = "Exposure to distress",
+       y = "",
+       color = "Disorg.:",
+       title = "",
+       ) 
+
+pos_m2 <- 
+  pos_m2 + 
+  geom_smooth(size = 1.3) + 
+  scale_fill_manual(values = c("black", "#7570B3")) +
+  scale_colour_manual(labels = c("Low", "High"), values = c("black", "#7570B3")) + 
+  theme_classic() +
+  theme(legend.position='none') +
+
+  labs(
+       x  = "",
+       y = "",
+       color = "Positive:",
+       title = "",
+       )
+
+neg_m2_b <- 
+  neg_m2 + 
+  geom_smooth(size = 1.3) + 
+  scale_fill_manual(values = c("black", "#d95f02")) +
+  scale_colour_manual(labels = c("Low", "High"), values = c("black", "#d95f02")) + 
+  theme_classic() +
+  theme(legend.position='none') +
+  labs(
+       x  = "",
+       y = "",
+       color = "Negative:",
+       title = bquote("Prediction of" ~ italic("PLE (log10)"))) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+dis_m4 <- 
+  dis_m4 +
+  geom_smooth(size = 1.3) + 
+  scale_fill_manual(values = c("black", "#1B9E77")) +
+  scale_colour_manual(labels = c("Low", "High"), values = c("black", "#1B9E77")) + 
+  theme_classic() +
+
+  labs(
+       x  = "Exposure to distress",
+       y = "",
+       color = "Disorg.:",
+       title = "",
+       ) 
+
+pos_m4 <- 
+  pos_m4 + 
+  geom_smooth(size = 1.3) + 
+  scale_fill_manual(values = c("black", "#7570B3")) +
+  scale_colour_manual(labels = c("Low", "High"), values = c("black", "#7570B3")) + 
+  theme_classic() +
+  labs(
+       x  = "",
+       y = "",
+       color = "Positive:",
+       title = "",
+       )
+
+neg_m4_b <- 
+  neg_m4 + 
+  geom_smooth(size = 1.3) + 
+  scale_fill_manual(values = c("black", "#d95f02")) +
+  scale_colour_manual(labels = c("Low", "High"), values = c("black", "#d95f02")) + 
+  theme_classic() +
+  labs(
+       x  = "",
+       y = "",
+       color = "Negative:",
+   #    title = "In predicting PLE (log10 transformed)",
+       title = bquote("Prediction of " ~ italic("\nPerceived Distress"))) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+```{r, warning=F, message=F}
+combined_plots <- 
+  neg_m2_b + neg_m4_b + 
+  pos_m2 + pos_m4 + 
+  dis_m2 + dis_m4 + 
+  boot_plot_1_b + 
+  boot_plot_2 + 
+  plot_layout(ncol = 2, nrow = 4, heights = c(1.2, 1.2, 1.2, 2))+ #, widths = c(1.2, 1.2, 1.2, 2)) + 
+  plot_annotation(tag_levels = "A") & 
+  theme(
+    plot.title = element_text(size = 10),
+    plot.tag = element_text(size = 10, face="bold"),
+   # legend.position = "bottom",
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 7),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 8))
+
+
+combined_plots
+ggsave("main_plot.jpeg", device = "jpeg", width = 15, height = 20, units = "cm")
+
+```
+
+
 
 ```{r echo=TRUE}
 # plotting
@@ -599,9 +787,9 @@ boot_dat_mod_2_main <-
 map(
     ~tibble(
       perceived_distress = na.omit(.x$stressor_sum_centered_int),
-      pos_sch = na.omit(.x$mss_pos_score),
-      neg_sch = na.omit(.x$mss_neg_score),
-      dis_sch = na.omit(.x$mss_dis_score)
+      Positive = na.omit(.x$mss_pos_score),
+      Negative = na.omit(.x$mss_neg_score),
+      Disorganized = na.omit(.x$mss_dis_score)
     )
   ) %>%
   bind_rows()
@@ -610,7 +798,7 @@ map(
 # rearranging tibble format
 boot_dat_mod_2_main_long <- 
   boot_dat_mod_2_main %>% 
-  pivot_longer(c(perceived_distress, pos_sch, neg_sch, dis_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(perceived_distress, Positive, Negative, Disorganized), names_to = "predictor", values_to = "value")
 
 
 # plotting
@@ -677,9 +865,9 @@ boot_dat_mod_3_inter <-
   map("replicates") %>% 
   map(
     ~tibble(
-      neg_sch = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
-      pos_sch = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
-      dis_sch = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
+      Negative = na.omit(.x$"stressor_sum_centered_int:mss_neg_score"),
+      Positive = na.omit(.x$"stressor_sum_centered_int:mss_pos_score"),
+      Disorganized = na.omit(.x$"stressor_sum_centered_int:mss_dis_score")
     )
   ) %>%
   bind_rows()
@@ -688,7 +876,7 @@ boot_dat_mod_3_inter <-
 # rearranging tibble format
 boot_dat_mod_3_inter_long <- 
   boot_dat_mod_3_inter %>% 
-  pivot_longer(c(neg_sch, pos_sch, dis_sch), names_to = "predictor", values_to = "value")
+  pivot_longer(c(Negative, Positive, Disorganized), names_to = "predictor", values_to = "value")
 
 
 # plotting
