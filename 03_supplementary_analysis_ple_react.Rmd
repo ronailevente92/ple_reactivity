@@ -478,18 +478,9 @@ boot_plot_2 <-
 ```
 
 ```{r}
-# neg_m1 <- plot_model(m1, type = "int")[[1]]
-# pos_m1 <- plot_model(m1, type = "int")[[2]]
-
-
 neg_m2 <- plot_model(m2, type = "int")[[1]]
 pos_m2 <- plot_model(m2, type = "int")[[2]]
 dis_m2 <- plot_model(m2, type = "int")[[3]]
-
-
-# neg_m3 <- plot_model(m3, type = "int")[[1]]
-# pos_m3 <- plot_model(m3, type = "int")[[2]]
-
 
 neg_m4 <- plot_model(m4, type = "int")[[1]]
 pos_m4 <- plot_model(m4, type = "int")[[2]]
