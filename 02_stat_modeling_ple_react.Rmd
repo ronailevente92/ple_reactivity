@@ -1,0 +1,248 @@
+---
+title: "02_stat_modeling_ple_react"
+author: "Levente Ronai"
+output: html_document
+  html_document:
+   theme: spacelab
+   code_download: true
+   toc: true
+   toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r, message=F, warning=F, include=F}
+
+options(scipen = 999)
+
+library(readxl)
+library(xts)
+library(psych)
+library(qgraph)
+library(tidyverse)
+library(dplyr)
+library(purrr)
+library(lme4)
+library(lmerTest)
+library(sjPlot)
+library(ggplot2)
+library(car)
+library(broom)
+library(performance)
+# library(confintr)
+# library(goft)
+
+```
+
+import data
+
+```{r, message=F, warning=F}
+dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
+
+model_dat <- read.csv("data_processed/model_dat.csv")
+```
+
+
+```{r, message=F, warning=F}
+
+model_dat <- 
+  model_dat %>% 
+  mutate(stressor_sum_centered_int = stressor_sum_centered * -1,  # the higher the value, the greater the exposure to stress
+         ple_log = log10(ple_cfa+3)) # log transformation of ple
+
+```
+
+Baseline model
+
+```{r}
+m0 <- 
+  lmer(
+     ple_log ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+
+tab_model(m0, show.aicc = T, show.std = T)
+# plot_model(m0, type = "int")
+
+saveRDS(m0, "models/m0.rds")
+
+```
+
+Pos and neg schizotypy's moderation effect on PLE reactivity (ples ~ stressors) (without Disorg. schizotypy)
+
+```{r}
+
+m1 <- 
+  lmer(
+    ple_log ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int * mss_neg_score  +
+      stressor_sum_centered_int * mss_pos_score  +
+    #  stressor_sum_centered_int * mss_dis_score  +
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+
+tab_model(m1, show.aicc = T, show.std = T)
+plot_model(m1, type = "diag")
+
+saveRDS(m1, "models/m1.rds")
+
+```
+
+Schizotypal trait's moderation effect on PLE reactivity (ples ~ stressors) (including Disorg. schizotypy!)
+
+```{r}
+m2 <- 
+  lmer(
+    ple_log ~ 
+      day + beep + gender + age +
+       stressor_sum_centered_int * mss_neg_score  +
+       stressor_sum_centered_int * mss_pos_score  +
+       stressor_sum_centered_int * mss_dis_score  +
+      (stressor_sum_centered_int  | id_esm), data = model_dat)
+
+
+
+tab_model(m2, show.aicc = T, show.std = T)
+
+plot_model(m2, type = "diag")
+
+saveRDS(m2, "models/m2.rds")
+
+```
+
+alternative baseline model
+
+```{r}
+
+m0_alt <- 
+  lmer(
+     ple_log ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+
+tab_model(m0_alt, show.aicc = T, show.std = T)
+# plot_model(m0, type = "int")
+
+saveRDS(m0_alt, "models/m0_alt.rds")
+
+```
+
+Pos and neg schizotypy's moderation effect on PLE reactivity (ples ~ stressors) (without Disorg. schizotypy)
+
+```{r}
+m3 <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int * mss_neg_score +
+      stressor_sum_centered_int * mss_pos_score +
+    #  stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+
+tab_model(m3, show.aicc = T, show.std = T)
+plot_model(m3, type = "diag")
+
+saveRDS(m3, "models/m3.rds")
+
+```
+
+Schizotypal trait's moderation effect on PLE reactivity (ples ~ stressors) (including Disorg. schizotypy!)
+
+```{r}
+m4 <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int * mss_neg_score +
+      stressor_sum_centered_int * mss_pos_score +
+      stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+
+tab_model(m4, show.aicc = T, show.std = T)
+plot_model(m4, type = "int")
+
+saveRDS(m4, "models/m4.rds")
+
+```
+
+```{r}
+tab_model(m0, m1, m2, show.std = T)
+tab_model(m0_alt, m3, m4, show.std = T)
+```
+
+Schizotypal traits in distinct models to avoid unseparable effects (can occur due to covariance between predictor variables) on ples
+
+```{r}
+
+m_pos <- 
+  lmer(
+     ple_log ~ 
+      day + beep + gender + age +
+      # stressor_sum_centered_int * mss_neg_score +
+      stressor_sum_centered_int * mss_pos_score +
+      # stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+m_neg <- 
+  lmer(
+     ple_log ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int * mss_neg_score +
+      # stressor_sum_centered_int * mss_pos_score +
+      # stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+m_dis <- 
+  lmer(
+     ple_log ~ 
+      day + beep + gender + age +
+      # stressor_sum_centered_int * mss_neg_score +
+      # stressor_sum_centered_int * mss_pos_score +
+      stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+tab_model(m_pos, m_neg, m_dis, show.aic = T, show.std = T)
+
+```
+
+Schizotypal traits in distinct models to avoid unseparable effects (can occur due to covariance between predictor variables) on ples
+
+```{r}
+
+m_pos <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      # stressor_sum_centered_int * mss_neg_score +
+      stressor_sum_centered_int * mss_pos_score +
+      # stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+m_neg <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stressor_sum_centered_int * mss_neg_score +
+      # stressor_sum_centered_int * mss_pos_score +
+      # stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+m_dis <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      # stressor_sum_centered_int * mss_neg_score +
+      # stressor_sum_centered_int * mss_pos_score +
+      stressor_sum_centered_int * mss_dis_score + 
+      (stressor_sum_centered_int | id_esm), data = model_dat)
+
+tab_model(m_pos, m_neg, m_dis, show.aic = T, show.std = T)
+
+```
