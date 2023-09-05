@@ -119,7 +119,7 @@ alternative baseline model
 
 m0_alt <- 
   lmer(
-     ple_log ~ 
+     event_unpleasantness ~ 
       day + beep + gender + age +
       stressor_sum_centered_int + 
       (stressor_sum_centered_int | id_esm), data = model_dat)
