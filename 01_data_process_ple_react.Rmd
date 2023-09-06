@@ -4,19 +4,19 @@ author: "Levente Ronai"
 output: html_document
 ---
 
-```{r, message = F, warning = F}
+loading packages
+
+```{r}
 
 options(scipen = 999)
 
-### loading packages
-
-library(psych)
-library(tidyverse)
-library(dplyr)
-library(data.table)
-library(git2r)
-library(lavaan)
-library(semTools)
+suppressPackageStartupMessages(library(psych))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(git2r))
+suppressPackageStartupMessages(library(lavaan))
+suppressPackageStartupMessages(library(semTools))
 
 ```
 

@@ -1,5 +1,6 @@
 ---
 title: "R Notebook"
+author: "Flora Hann"
 output: html_notebook
 editor_options: 
   chunk_output_type: inline

@@ -11,39 +11,37 @@ editor_options:
   chunk_output_type: inline
 ---
 
-```{r, message=F, warning=F, include=F}
+```{r, include=F}
 
 options(scipen = 999)
 
-library(readxl)
-library(xts)
-library(psych)
-library(qgraph)
-library(tidyverse)
-library(dplyr)
-library(purrr)
-library(lme4)
-library(lmerTest)
-library(sjPlot)
-library(ggplot2)
-library(car)
-library(broom)
-library(performance)
-# library(confintr)
-# library(goft)
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(xts))
+suppressPackageStartupMessages(library(psych))
+suppressPackageStartupMessages(library(qgraph))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(purrr))
+suppressPackageStartupMessages(library(lme4))
+suppressPackageStartupMessages(library(lmerTest))
+suppressPackageStartupMessages(library(sjPlot))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(car))
+suppressPackageStartupMessages(library(broom))
+suppressPackageStartupMessages(library(performance))
 
 ```
 
 import data
 
-```{r, message=F, warning=F}
+```{r}
 dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 
 model_dat <- read.csv("data_processed/model_dat.csv")
 ```
 
 
-```{r, message=F, warning=F}
+```{r}
 
 model_dat <- 
   model_dat %>% 
