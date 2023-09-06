@@ -51,8 +51,8 @@ m4 <- readRDS("models/m4.rds")
 ```
 
 ```{r}
-tab_model(m0, m1, m2, digits = 5)
-tab_model(m0_alt, m3, m4, digits = 5)
+tab_model(m0, m1, m2, digits = 5, show.std = T)
+tab_model(m0_alt, m3, m4, digits = 5, show.std = T)
 ```
 
 assumptions for m1
@@ -274,7 +274,6 @@ list_case_m4 <-
 extracting bootstrapped coefficients
 
 ```{r paged.print=TRUE}
-
 ci_boot_m0 <-
   list_case_m0 %>%
   map(confint, type = "norm")
@@ -299,11 +298,17 @@ ci_boot_m3 <-
 ci_boot_m4 <-
   list_case_m4 %>%
   map(confint, type = "norm")
+```
 
-options(digits = 4)
+
+```{r paged.print=TRUE}
+as.data.frame(ci_boot_m0) %>% print.data.frame(., digits = 2)
+as.data.frame(ci_boot_m0_alt) %>% print.data.frame(., digits = 2)
 
 as.data.frame(ci_boot_m1) %>% print.data.frame(., digits = 2)
 as.data.frame(ci_boot_m2) %>% print.data.frame(., digits = 2)
+
+
 as.data.frame(ci_boot_m3) %>% print.data.frame(., digits = 2)
 as.data.frame(ci_boot_m4) %>% print.data.frame(., digits = 2)
 
