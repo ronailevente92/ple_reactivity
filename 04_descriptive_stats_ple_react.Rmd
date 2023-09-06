@@ -587,7 +587,10 @@ hist_ple_cfa <- ggplot(ple_cfa_figure) +
   theme(axis.title = element_text(size = 12))
 
 hist_ple_cfa
+```
 
+
+```{r}
 # # raincloud plot
 # raincloud_ple_cfa <-ggplot(ple_cfa_figure, aes(1, ple_cfa)) +
 #   geom_rain(
