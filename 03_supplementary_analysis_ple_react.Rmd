@@ -488,7 +488,7 @@ boot_plot_1_b <-
   geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .4, size = .7) +
   labs(
        x  = "",
-       y = "Bootstrapped Est.",
+       y = "Bootstrapped Interaction\nEstimates",
        title = "",
        )
 ```
@@ -531,7 +531,7 @@ dis_m2 <-
   theme(legend.position='none') +
 
   labs(
-       x  = "Exposure to distress",
+       x  = "Stress Exposure",
        y = "",
        color = "Disorg.:",
        title = "",
@@ -574,7 +574,7 @@ dis_m4 <-
   theme_classic() +
 
   labs(
-       x  = "Exposure to distress",
+       x  = "Stress Exposure",
        y = "",
        color = "Disorg.:",
        title = "",
@@ -609,7 +609,10 @@ neg_m4_b <-
 
 ```
 
-```{r, warning=F, message=F, fig.height=7, fig.width=5}
+```{r, warning=F, message=F}
+
+# add "fig.height=7, fig.width=5" to better visualization
+
 combined_plots <- 
   neg_m2_b + neg_m4_b + 
   pos_m2 + pos_m4 + 
@@ -629,6 +632,7 @@ combined_plots <-
 
 
 combined_plots
-# ggsave("main_plot.jpeg", device = "jpeg", width = 15, height = 20, units = "cm")
+
+# ggsave("Fig02.jpeg", device = "jpeg", width = 15, height = 20, units = "cm")
 
 ```
