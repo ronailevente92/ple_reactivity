@@ -29,7 +29,7 @@ big_data <- read.csv("data_processed/big_data.csv")
 dat_cleaned <- 
   big_data %>% 
   select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary,
-         day, beep, event_pleasantness,
+         day, beep, event_pleasantness, sad, afraid, unrested, angry, irritated,
          contains(c("mss_", "ple_", "stressor")), -contains(c("minutes")))
 
 write.csv(dat_cleaned, "data_processed/dat_cleaned.csv", row.names = F)
@@ -44,6 +44,276 @@ dat_cleaned  <-
          event_unpleasantness = 8-event_pleasantness)
 
 ```
+
+
+```{r}
+
+cfa_stressor_formative <-
+  dat_cleaned %>%
+  group_by(id_esm, date_diary) %>%
+  filter(!is.na(date_diary)) %>%
+  # arrange(id_emo, day, beep) %>% 
+  mutate_at(vars(
+    angry, irritated, sad,
+    unrested, afraid, ple_control, ple_strange, ple_thoughts, ple_suspicion, ple_treatment,
+    ple_perception, ple_thougtscontrol, ple_familiarstrange),
+    .funs = list(
+      mean_threedays = ~ mean(., na.rm = T))
+    ) %>% 
+  ungroup() %>% 
+  distinct() %>%
+  select(id_esm, date_diary, stressor_1:stressor_19, stressor_21, contains("mean_threedays")) %>%
+  filter_at(vars(stressor_1:ple_familiarstrange_mean_threedays), all_vars(!is.na(.))) %>%
+  distinct() %>%
+  ungroup()
+
+```
+
+
+### kell egy megfigyelt változó?
+
+```{r}
+
+myModel <- 
+
+'
+# 1. latent variable definitions
+ple =~ 
+ple_control_mean_threedays + ple_strange_mean_threedays + ple_thoughts_mean_threedays + ple_suspicion_mean_threedays + ple_treatment_mean_threedays + ple_perception_mean_threedays + ple_thougtscontrol_mean_threedays + ple_familiarstrange_mean_threedays
+
+negaff =~
+sad_mean_threedays + afraid_mean_threedays + unrested_mean_threedays + angry_mean_threedays + irritated_mean_threedays
+
+
+# 2. regressions
+negaff ~ stressors
+ple ~ stressors
+
+# 3. (co)variances
+negaff ~~ ple
+
+
+model.syntax 93
+# 7. formative factors
+stressors <~  stressor_1 + stressor_2 + stressor_3 + stressor_4 + stressor_5 +
+stressor_6 + stressor_7 + stressor_8 + stressor_9 +  stressor_10 +  stressor_11 +  stressor_12 + stressor_13 + stressor_14 + stressor_15 + stressor_16 +  stressor_17 + stressor_18 + stressor_19 + stressor_21'
+
+
+fit_formativ_stressor <- lavaan(model = myModel, data = cfa_stressor_formative, std.lv = TRUE, estimator = "ML")
+```
+
+
+```{r}
+### parallel analysis of affective states
+
+
+prin <-
+  dat_cleaned %>%
+  select(stressor_2:stressor_19, stressor_21, -stressor_8) %>% 
+    filter_at(vars(stressor_2:stressor_21), all_vars(!is.na(.)))
+
+
+(parallel <- psych::fa.parallel(prin, fm = "pa"))
+
+(principal <-
+    psych::principal(prin, nfactors = 7, rotate = "oblimin"))
+
+```
+
+```{r}
+cfa_stressor <-
+  dat_cleaned %>%
+  filter(!is.na(date_diary)) %>%
+  select(id_esm, date_diary, stressor_1:stressor_19, stressor_21) %>%
+  filter_at(vars(stressor_1:stressor_21), all_vars(!is.na(.))) %>%
+  distinct() %>%
+  ungroup()
+```
+
+```{r}
+cfa_stressor_syntax <- '
+
+  level: 1
+      stressor_I  =~
+      stressor_9 +
+      stressor_10 +
+      stressor_11 +
+      stressor_17
+
+      stressor_II  =~
+      stressor_6 +
+      stressor_7 +
+      stressor_12 +
+      stressor_13 +
+  #    stressor_14 +
+      stressor_18
+
+      stressor_III  =~
+  #    stressor_3 +
+  #    stressor_6 +
+      stressor_15 +
+      stressor_16 # +
+  #    stressor_18
+      
+  level: 2
+      stressor_I  =~
+      stressor_9 +
+      stressor_10 +
+      stressor_11 +
+      stressor_17
+
+      stressor_II  =~
+      stressor_6 +
+      stressor_7 +
+      stressor_12 +
+      stressor_13 +
+  #    stressor_14 +
+      stressor_18
+
+      stressor_III  =~
+  #    stressor_3 +
+  #    stressor_6 +
+      stressor_15 +
+      stressor_16 # +
+  #    stressor_18
+
+      # stressor_IV  =~
+      # stressor_2 +
+      # stressor_6 +
+      # stressor_5 +
+      # stressor_4 +
+      # stressor_14 +
+      # stressor_17 +
+      # stressor_18
+
+      # stressor_V  =~
+      # stressor_2 +
+      # stressor_3 +
+      # stressor_7 +
+      # stressor_17
+
+      # stressor_VI  =~
+      # stressor_3 +
+      # stressor_5 +
+      # stressor_14 +
+      # stressor_21
+      # 
+      # stressor_VII  =~
+      # stressor_5 +
+      # stressor_17 +
+      # stressor_21 +
+      # stressor_19
+
+'
+
+fit_stressor <- cfa(model = cfa_stressor_syntax, data = cfa_stressor, std.lv = TRUE, estimator = "MLR", cluster = "id_esm")
+```
+
+```{r}
+
+cfa_stressor_syntax <- '
+
+
+
+      stressor_I  =~
+  #    stressor_2 +  
+  #    stressor_3 + 
+      stressor_4 + 
+      stressor_5 +  
+      stressor_6 +  
+      stressor_7 + 
+      stressor_9 + 
+      stressor_10 + 
+      stressor_11 + 
+      stressor_12 + 
+      stressor_13 + 
+      stressor_14 +
+      stressor_15 + 
+      stressor_16 + 
+      stressor_17 + 
+      stressor_18 + 
+      stressor_19 # +
+  #    stressor_21
+      
+      stressor_10	~~	stressor_11
+      stressor_15	~~	stressor_16
+  
+'
+
+fit_stressor <- cfa(model = cfa_stressor_syntax, data = cfa_stressor, std.lv = TRUE, estimator = "WLSMV", ordered = T)
+```
+
+```{r, warning = T}
+
+fitMeasures(fit_stressor, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr", "srmr_within", "srmr_between"))
+```
+
+```{r, warning = T}
+
+summary(fit_stressor, fit.measures = TRUE, standardize = TRUE)
+
+
+modificationindices(fit_stressor) %>%
+  #select("lhs", "op", "rhs", "level", "mi") %>%
+  filter(mi > 11) %>%
+  arrange(desc(mi)) %>%
+  head(n = 10) %>%
+  print()
+
+```
+
+```{r, warning = T}
+# factor loadings
+inspect(fit_stressor, what = "std")$within$lambda
+inspect(fit_stressor, what = "std")$id_esm$lambda
+
+```
+
+
+```{r, warning = T}
+# reliability
+(reliability(fit_stressor))
+
+```
+
+
+```{r, warning = T}
+
+dat_ple_lev_2 <-
+  cfa_ple %>%
+  select(id_esm) %>%
+  distinct() %>%
+  cbind(lavPredict(fit_ple, newdata = cfa_ple[4:11], level = 2L))
+
+dat_ple_lev_1 <-
+  cfa_ple %>%
+  cbind(lavPredict(fit_ple, newdata = cfa_ple[4:11], level = 1L)) %>%
+  select(-c(ple_control:ple_familiarstrange))
+
+dat_ple <-
+  dat_ple_lev_1 %>%
+  left_join(dat_ple_lev_2, by = "id_esm") %>%
+  mutate(ple_cfa =  ple_within + ple_between)
+
+dat_cleaned <-
+  dat_cleaned %>% 
+  left_join(dat_ple, by = c("id_esm", "date_esm", "beep"))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 multilevel confirmatory factor analysis for psychotic-like experiences (within/between levels)
 
