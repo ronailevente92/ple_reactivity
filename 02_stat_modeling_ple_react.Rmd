@@ -45,8 +45,8 @@ model_dat <- read.csv("data_processed/model_dat.csv")
 
 model_dat <- 
   model_dat %>% 
-  mutate(stressor_sum_centered_int = stressor_sum_centered * -1,  # the higher the value, the greater the exposure to stress
-         ple_log = log10(ple_cfa+3)) # log transformation of ple
+  mutate(stressor_sum_centered_int = stressor_sum_centered * -1) # the higher the value, the greater the exposure to stress
+         # ple_log = log10(ple_cfa+3))                             # log transformation of ple
 
 ```
 
@@ -55,7 +55,7 @@ Baseline model
 ```{r}
 m0 <- 
   lmer(
-     ple_log ~ 
+     ple_cfa ~ 
       day + beep + gender + age +
       stressor_sum_centered_int + 
       (stressor_sum_centered_int | id_esm), data = model_dat)

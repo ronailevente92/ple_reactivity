@@ -534,7 +534,7 @@ dis_m2 <-
   theme(legend.position='none') +
 
   labs(
-       x  = "Stress Exposure",
+       x  = "Stress-exposure",
        y = "",
        color = "Disorg.:",
        title = "",
@@ -577,7 +577,7 @@ dis_m4 <-
   theme_classic() +
 
   labs(
-       x  = "Stress Exposure",
+       x  = "Stress-exposure",
        y = "",
        color = "Disorg.:",
        title = "",
@@ -607,7 +607,7 @@ neg_m4_b <-
        y = "",
        color = "Negative:",
    #    title = "In predicting PLE (log10 transformed)",
-       title = bquote("Prediction of " ~ italic("\nPerceived Distress"))) +
+       title = bquote("Prediction of " ~ italic("\nEvent-unpleasantness"))) +
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
@@ -636,6 +636,66 @@ combined_plots <-
 
 combined_plots
 
-# ggsave("Fig02.jpeg", device = "jpeg", width = 15, height = 20, units = "cm")
+ggsave("Fig02.jpeg", device = "jpeg", width = 15, height = 20, units = "cm")
 
 ```
+
+
+```{r}
+
+model_dat %>% 
+  select(id_esm, mss_dis, mss_pos, mss_neg) %>% 
+  distinct() %>% 
+  gather("dimension", "value", 2:4) %>%
+  
+  ggplot(aes(dimension, value)) +
+  
+  ggdist::stat_halfeye(aes(fill = factor(dimension)), adjust = 1.5, width = .8, .width = 0, justification = -.18, point_colour = NA, position = position_dodge(width = 0.8), width = 0.25) + 
+  geom_boxplot(width = .21, outlier.shape = NA, lwd = 0.6, position = position_dodge(width = 0.8), width = 0.25) + 
+  geom_jitter(aes(color = factor(dimension)), width = .05, height = 0.1, alpha = .2, show.legend = F) +
+
+ # facet_wrap(~dimension, dir = "v") +   #, scales = "free", dir = "v") +
+  theme(strip.text.x = element_blank(),
+        legend.spacing.y = unit(1, 'cm')) +
+  guides(fill = guide_legend(byrow = TRUE)) + 
+  xlab("") +
+  ylab("Total raw scores") +
+  labs(fill = "Schizotypal dim.:", title = "") + 
+  scale_y_continuous(limits = c(0, 14), breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
+  theme_classic() +
+  #+ 
+  scale_fill_manual(labels = c("Disorganized", "Negative", "Positive"), values = c("#1B9E77", "#d95f02", "#7570B3")) +
+  scale_color_manual(labels = c("Disorganized", "Negative", "Positive"), values = c("#1B9E77", "#d95f02", "#7570B3")) +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+  
+  ggsave("distr.jpeg", device = "jpeg", width = 15, height = 9, units = "cm")
+
+```
+
+```{r}
+
+# Load the necessary library
+library(lme4)
+library(mlmpower)
+
+# Assume you have a fitted model 'fit' with random slope and intercept
+# fit <- lmer(y ~ x + (x|group), data = your_data)
+
+# Extract residual, fixed and random variances from the model
+residual_variance <- sigma(fit)^2
+fixed_variance <- var(as.numeric(fixef(fit)))
+random_variance <- as.data.frame(VarCorr(fit))$vcov
+
+# Now, you can use the mlmpower function for power analysis
+power_analysis <- mlmpower(fit, 
+                           residual.variance = residual_variance, 
+                           fixed.variance = fixed_variance, 
+                           random.variance = random_variance)
+
+# Print the result
+print(power_analysis)
+
+```
+
