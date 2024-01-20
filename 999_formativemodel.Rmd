@@ -21,25 +21,26 @@ colnames(dat)
 ## prep data
 
 ```{r}
-dat <-
+dat_diary <-
   dat %>% 
   group_by(id_esm, three_day_block) %>% 
   mutate(
     across(
-      c(angry, sad, irritated, worried,
+      c(angry, sad, irritated, worried, afraid,
         ple_strange, ple_thoughts, ple_suspicion, ple_treatment, event_pleasantness,
         ple_perception, ple_thougtscontrol, ple_familiarstrange),
       ~mean(., na.rm =T),
       .names = "{.col}_diarymean"
     )
   ) %>% 
-  ungroup()
+  ungroup() %>% 
+  distinct(id_esm, three_day_block, .keep_all = T)
 ```
 
 # exploration
 
 ```{r}
-dat %>% 
+dat_diary %>% 
   pivot_longer(stressor_1:stressor_18, names_to = "stressor_no", values_to = "score") %>% 
   ggplot(aes(score)) + 
   geom_histogram() + 
@@ -49,7 +50,7 @@ dat %>%
 
 
 ```{r}
-dat %>% 
+dat_diary %>% 
     pivot_longer(stressor_1:stressor_18, names_to = "stressor_no", values_to = "score") %>% 
   count(stressor_no, score)
 ```
@@ -93,7 +94,7 @@ level: 2
 ```
 
 ```{r}
-fit_formative <- lavaan::sem(sem_stressor_formative, data = dat, cluster = "id_esm", estimator = "ML")
+fit_formative <- lavaan::sem(sem_stressor_formative, data = dat_diary, cluster = "id_esm", estimator = "ML")
 ```
 
 ```{r}
@@ -134,6 +135,7 @@ level: 1
   sad_diarymean       ~ stressor_total_w
   irritated_diarymean ~ stressor_total_w 
   worried_diarymean   ~ stressor_total_w 
+  # afraid_diarymean    ~ stressor_total_w 
   
 level: 2
   
@@ -143,12 +145,13 @@ level: 2
   sad_diarymean       ~ stressor_total_b
   irritated_diarymean ~ stressor_total_b
   worried_diarymean   ~ stressor_total_b
+  # afraid_diarymean    ~ stressor_total_b 
 "
 
 ```
 
 ```{r}
-fit_formative_negaff <- lavaan::sem(stressor_formative_negaff, data = dat, cluster = "id_esm", estimator = "ML")
+fit_formative_negaff <- lavaan::sem(stressor_formative_negaff, data = dat_diary, cluster = "id_esm", estimator = "ML")
 ```
 
 ```{r}
