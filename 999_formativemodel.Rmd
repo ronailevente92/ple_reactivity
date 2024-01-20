@@ -1,0 +1,166 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Setup
+
+```{r}
+library(tidyverse)
+library(lavaan)
+```
+
+## import data
+
+```{r}
+dat <- read_csv("data_processed/big_data.csv")
+```
+```{r}
+colnames(dat)
+```
+## prep data
+
+```{r}
+dat <-
+  dat %>% 
+  group_by(id_esm, three_day_block) %>% 
+  mutate(
+    across(
+      c(angry, sad, irritated, worried,
+        ple_strange, ple_thoughts, ple_suspicion, ple_treatment, event_pleasantness,
+        ple_perception, ple_thougtscontrol, ple_familiarstrange),
+      ~mean(., na.rm =T),
+      .names = "{.col}_diarymean"
+    )
+  ) %>% 
+  ungroup()
+```
+
+# exploration
+
+```{r}
+dat %>% 
+  pivot_longer(stressor_1:stressor_18, names_to = "stressor_no", values_to = "score") %>% 
+  ggplot(aes(score)) + 
+  geom_histogram() + 
+  facet_wrap(~stressor_no)
+
+```
+
+
+```{r}
+dat %>% 
+    pivot_longer(stressor_1:stressor_18, names_to = "stressor_no", values_to = "score") %>% 
+  count(stressor_no, score)
+```
+
+
+# hypothesis testing
+
+## formative models
+
+### stressor to negaff and ple reflective latents
+
+```{r}
+sem_stressor_formative <- 
+  "
+level: 1
+  
+  stressor_total_w <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
+  ple_latent_w =~ ple_strange_diarymean + ple_thoughts_diarymean + ple_suspicion_diarymean + ple_treatment_diarymean + ple_perception_diarymean + ple_thougtscontrol_diarymean + ple_familiarstrange_diarymean
+  negaff_latent_w =~ angry_diarymean + sad_diarymean + irritated_diarymean + worried_diarymean
+  
+  ple_latent_w ~ stressor_total_w 
+  negaff_latent_w ~ stressor_total_w 
+  
+  # based on mi's
+  ple_suspicion_diarymean	~~	ple_treatment_diarymean
+  sad_diarymean	~~	worried_diarymean
+  ple_thoughts_diarymean	~~	ple_suspicion_diarymean
+  ple_perception_diarymean	~~	ple_familiarstrange_diarymean
+  
+level: 2
+  
+  ple_latent_b =~ ple_strange_diarymean + ple_thoughts_diarymean + ple_suspicion_diarymean + ple_treatment_diarymean + ple_perception_diarymean + ple_thougtscontrol_diarymean + ple_familiarstrange_diarymean
+  negaff_latent_b =~ angry_diarymean + sad_diarymean + irritated_diarymean + worried_diarymean
+
+    # stressor_total_b <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
+  # ple_latent_b ~ stressor_total_b
+  # negaff_latent_b ~ stressor_total_b
+
+"
+
+```
+
+```{r}
+fit_formative <- lavaan::sem(sem_stressor_formative, data = dat, cluster = "id_esm", estimator = "ML")
+```
+
+```{r}
+lavPredict(fit_formative) %>% colnames()
+```
+
+
+```{r}
+modificationindices(fit_formative) %>% arrange(-mi)
+```
+
+
+```{r}
+fitmeasures(
+  fit_formative,
+  fit.measures = 
+    c(
+      "chisq", "df", "pvalue","CFI","TLI", "RMSEA", "srmr_within", "srmr_between"
+    )
+)
+```
+
+```{r}
+summary(fit_formative)
+```
+
+
+### stressor to observed negaff only
+
+```{r}
+stressor_formative_negaff <- 
+  "
+level: 1
+  
+  stressor_total_w <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
+  
+  angry_diarymean     ~ stressor_total_w
+  sad_diarymean       ~ stressor_total_w
+  irritated_diarymean ~ stressor_total_w 
+  worried_diarymean   ~ stressor_total_w 
+  
+level: 2
+  
+  stressor_total_b <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
+  
+  angry_diarymean     ~ stressor_total_b
+  sad_diarymean       ~ stressor_total_b
+  irritated_diarymean ~ stressor_total_b
+  worried_diarymean   ~ stressor_total_b
+"
+
+```
+
+```{r}
+fit_formative_negaff <- lavaan::sem(stressor_formative_negaff, data = dat, cluster = "id_esm", estimator = "ML")
+```
+
+```{r}
+summary(fit_formative_negaff)
+```
+```{r}
+fitmeasures(
+  fit_formative_negaff, 
+  fit.measures = 
+    c(
+      "chisq", "df", "pvalue","CFI","TLI", "RMSEA", "srmr_within", "srmr_between"
+    )
+)
+```
+
