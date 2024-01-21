@@ -14,14 +14,20 @@ library(semTools)
 ## import data
 
 ```{r}
-dat <- read_csv("data_processed/big_data.csv")
+big_data <- read.csv("data_processed/big_data.csv")
+
+dat <- 
+  big_data %>% 
+  select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary, three_day_block,
+         day, beep, event_pleasantness, sad, afraid, unrested, angry, irritated, worried,
+         contains(c("mss_", "ple_", "stressor")), -contains(c("minutes")))
 ```
-```{r}
-colnames(dat)
-```
-## prep data
+
 
 ```{r}
+## prep data
+
+
 dat_diary <-
   dat %>% 
   group_by(id_esm, three_day_block) %>% 
@@ -190,6 +196,14 @@ prin <-
     psych::principal(prin, nfactors = 3, rotate = "oblimin"))
 ```
 ```{r}
+
+dat_cfa_stressor <-
+  dat_diary %>% 
+  select(id_esm, date_diary, stressor_9, stressor_10, stressor_11,
+         stressor_12, stressor_13, stressor_15, stressor_16, stressor_17) %>%
+  filter_at(vars(stressor_9:stressor_17), all_vars(!is.na(.))) 
+  
+
 cfa_stressor_syntax <- '
 
 level: 1
@@ -207,12 +221,12 @@ level: 2
       stressor_III_b  =~ stressor_15 +  stressor_16
 '
 
-fit_stressor <- cfa(model = cfa_stressor_syntax, data = dat_diary, std.lv = TRUE, cluster = "id_esm", estimator = "MLR")
+fit_stressor <- cfa(model = cfa_stressor_syntax, data = dat_cfa_stressor, std.lv = TRUE, cluster = "id_esm", estimator = "MLR")
 ```
 
 ```{r, warning = T}
 
-fitMeasures(fit_stressor, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr", "srmr_within", "srmr_between"))
+fitMeasures(fit_stressor, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
 ```
 ```{r}
 summary(fit_stressor)
@@ -220,12 +234,13 @@ summary(fit_stressor)
 
 
 ```{r}
-
-# within-person factor loadings
+# within/betwwe-person factor loadings
 (inspect(fit_stressor, what = "std")$within$lambda)
 (inspect(fit_stressor, what = "std")$id_esm$lambda)
+```
 
 
+```{r}
 # reliability of NA model
 (reliability(fit_stressor))
 
