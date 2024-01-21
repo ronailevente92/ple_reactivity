@@ -8,6 +8,7 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 library(lavaan)
+library(semTools)
 ```
 
 ## import data
@@ -41,7 +42,8 @@ dat_diary <-
 
 ```{r}
 dat_diary %>% 
-  pivot_longer(stressor_1:stressor_18, names_to = "stressor_no", values_to = "score") %>% 
+  select(stressor_1:stressor_19, stressor_21) %>% 
+  pivot_longer(stressor_1:stressor_21, names_to = "stressor_no", values_to = "score") %>% 
   ggplot(aes(score)) + 
   geom_histogram() + 
   facet_wrap(~stressor_no)
@@ -127,36 +129,39 @@ summary(fit_formative)
 ```{r}
 stressor_formative_negaff <- 
   "
-level: 1
+# level: 1
   
   stressor_total_w <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
   
-  angry_diarymean     ~ stressor_total_w
-  sad_diarymean       ~ stressor_total_w
-  irritated_diarymean ~ stressor_total_w 
-  worried_diarymean   ~ stressor_total_w 
-  # afraid_diarymean    ~ stressor_total_w 
+ angry_diarymean     ~ stressor_total_w
+ sad_diarymean       ~ stressor_total_w
+ irritated_diarymean ~ stressor_total_w
+ worried_diarymean   ~ stressor_total_w
+ afraid_diarymean    ~ stressor_total_w
   
-level: 2
-  
-  stressor_total_b <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
-  
-  angry_diarymean     ~ stressor_total_b
-  sad_diarymean       ~ stressor_total_b
-  irritated_diarymean ~ stressor_total_b
-  worried_diarymean   ~ stressor_total_b
-  # afraid_diarymean    ~ stressor_total_b 
-"
+# level: 2
+#   
+#   stressor_total_b <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
+#   
+#   angry_diarymean     ~ stressor_total_b
+#   # sad_diarymean       ~ stressor_total_b
+#   # irritated_diarymean ~ stressor_total_b
+#   # worried_diarymean   ~ stressor_total_b
+#   # afraid_diarymean    ~ stressor_total_b 
+  "
 
 ```
 
 ```{r}
-fit_formative_negaff <- lavaan::sem(stressor_formative_negaff, data = dat_diary, cluster = "id_esm", estimator = "ML")
+fit_formative_negaff <- lavaan::sem(stressor_formative_negaff, data = dat_diary, 
+                                    #cluster = "id_esm"
+                                    estimator = "ML")
 ```
 
 ```{r}
 summary(fit_formative_negaff)
 ```
+
 ```{r}
 fitmeasures(
   fit_formative_negaff, 
@@ -165,5 +170,66 @@ fitmeasures(
       "chisq", "df", "pvalue","CFI","TLI", "RMSEA", "srmr_within", "srmr_between"
     )
 )
+```
+```{r}
+modificationindices(fit_formative_negaff) %>% arrange(-mi)
+```
+
+### pca and factor analysis with the stressor variables that shows some variance
+
+```{r}
+prin <-
+  dat %>%
+  select(stressor_9, stressor_10, stressor_11, stressor_12, stressor_13, stressor_15, stressor_16, stressor_17) %>% 
+    filter_at(vars(stressor_9:stressor_17), all_vars(!is.na(.)))
+
+
+(parallel <- psych::fa.parallel(prin, fm = "pa"))
+
+(principal <-
+    psych::principal(prin, nfactors = 3, rotate = "oblimin"))
+```
+```{r}
+cfa_stressor_syntax <- '
+
+level: 1
+      stressor_I  =~ stressor_9 +  stressor_10 +  stressor_11
+      
+      stressor_II  =~ stressor_12 +  stressor_13 # +  stressor_17
+      
+      stressor_III  =~ stressor_15 +  stressor_16
+      
+level: 2
+      stressor_I_b  =~ stressor_9 +  stressor_10 +  stressor_11
+      
+      stressor_II_b  =~ stressor_12 +  stressor_13 #+  stressor_17
+      
+      stressor_III_b  =~ stressor_15 +  stressor_16
+'
+
+fit_stressor <- cfa(model = cfa_stressor_syntax, data = dat_diary, std.lv = TRUE, cluster = "id_esm", estimator = "MLR")
+```
+
+```{r, warning = T}
+
+fitMeasures(fit_stressor, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr", "srmr_within", "srmr_between"))
+```
+```{r}
+summary(fit_stressor)
+```
+
+
+```{r}
+
+# within-person factor loadings
+(inspect(fit_stressor, what = "std")$within$lambda)
+(inspect(fit_stressor, what = "std")$id_esm$lambda)
+
+
+# reliability of NA model
+(reliability(fit_stressor))
+
+```
+
 ```
 
