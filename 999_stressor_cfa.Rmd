@@ -5,6 +5,8 @@ output: html_notebook
 
 # Setup
 
+## load packages
+
 ```{r}
 library(tidyverse)
 library(lavaan)
@@ -23,11 +25,9 @@ dat <-
          contains(c("mss_", "ple_", "stressor")), -contains(c("minutes")))
 ```
 
-
-```{r}
 ## prep data
 
-
+```{r}
 dat_diary <-
   dat %>% 
   group_by(id_esm, three_day_block) %>% 
@@ -256,4 +256,42 @@ summary(fit_stressor)
 
 #### hierarchical factors
 
+```{r}
 
+dat_cfa_stressor <-
+  dat_diary %>% 
+  select(id_esm, date_diary, stressor_9, stressor_10, stressor_11,
+         stressor_12, stressor_13, stressor_15, stressor_16, stressor_17) %>%
+  filter_at(vars(stressor_9:stressor_17), all_vars(!is.na(.))) 
+  
+
+cfa_stressor_hierarchical_syntax <- '
+
+level: 1
+      stressor_I  =~ stressor_9 +  stressor_10 +  stressor_11
+      
+      stressor_II  =~ stressor_12 +  stressor_13 # +  stressor_17
+      
+      stressor_III  =~ stressor_15 +  stressor_16
+      
+      stressor_higher  =~ stressor_I +  stressor_II +  stressor_III
+      
+level: 2
+      stressor_I_b  =~ stressor_9 +  stressor_10 +  stressor_11
+      
+      stressor_II_b  =~ stressor_12 +  stressor_13 #+  stressor_17
+      
+      stressor_III_b  =~ stressor_15 +  stressor_16
+      
+'
+
+fit_stressor_hierarchical <- cfa(model = cfa_stressor_hierarchical_syntax, data = dat_cfa_stressor, std.lv = TRUE, cluster = "id_esm", estimator = "MLR")
+```
+
+```{r, warning = T}
+
+fitMeasures(fit_stressor_hierarchical, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
+```
+```{r}
+summary(fit_stressor_hierarchical, std = T)
+```
