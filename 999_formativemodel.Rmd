@@ -181,7 +181,10 @@ fitmeasures(
 modificationindices(fit_formative_negaff) %>% arrange(-mi)
 ```
 
-### pca and factor analysis with the stressor variables that shows some variance
+
+## reflective models
+
+### pca with the stressor variables that show some variance
 
 ```{r}
 prin <-
@@ -195,6 +198,11 @@ prin <-
 (principal <-
     psych::principal(prin, nfactors = 3, rotate = "oblimin"))
 ```
+
+### confirmatory factor analysis with the stressor variables that show some variance
+
+#### correlated factors
+
 ```{r}
 
 dat_cfa_stressor <-
@@ -246,5 +254,6 @@ summary(fit_stressor)
 
 ```
 
-```
+#### hierarchical factors
+
 
