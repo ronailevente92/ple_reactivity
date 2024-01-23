@@ -37,210 +37,531 @@ import data
 ```{r}
 dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 
-model_dat <- read.csv("data_processed/model_dat.csv")
+model_dat_stressors <- read.csv("data_processed/model_dat_stressors.csv")
 ```
 
 
 ```{r}
 
 model_dat <- 
-  model_dat %>% 
-  mutate(stressor_sum_centered_int = stressor_sum_centered * -1) # the higher the value, the greater the exposure to stress
-         # ple_log = log10(ple_cfa+3))                             # log transformation of ple
+  model_dat_stressors  %>% 
+  mutate(stressor_higher = stressor_higher * -1,
+         stress_balance_cfa = stress_balance_cfa * -1,
+         stress_social_cfa = stress_social_cfa * -1,
+         stress_control_cfa = stress_control_cfa * -1) # the higher the value, the greater the exposure to stress
 
 ```
 
-Baseline model
+### with the general stressor factor
 
 ```{r}
 m0 <- 
   lmer(
      ple_cfa ~ 
       day + beep + gender + age +
-      stressor_sum_centered_int + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
-
-
-tab_model(m0, show.aicc = T, show.std = T)
-# plot_model(m0, type = "int")
-
-saveRDS(m0, "models/m0.rds")
-
-```
-
-Pos and neg schizotypy's moderation effect on PLE reactivity (ples ~ stressors) (without Disorg. schizotypy)
-
-```{r}
+      stressor_higher  + 
+      (stressor_higher | id_esm), data = model_dat)
 
 m1 <- 
   lmer(
-    ple_log ~ 
+    ple_cfa ~ 
       day + beep + gender + age +
-      stressor_sum_centered_int * mss_neg_score  +
-      stressor_sum_centered_int * mss_pos_score  +
-    #  stressor_sum_centered_int * mss_dis_score  +
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+      stress_control_cfa * mss_neg_score  +
+ #     stressor_higher * mss_pos_score  +
+ #     stressor_higher * mss_dis_score  +
+      (stressor_higher | id_esm), data = model_dat)
 
-
-tab_model(m1, show.aicc = T, show.std = T)
-plot_model(m1, type = "diag")
-
-saveRDS(m1, "models/m1.rds")
-
-```
-
-Schizotypal trait's moderation effect on PLE reactivity (ples ~ stressors) (including Disorg. schizotypy!)
-
-```{r}
 m2 <- 
   lmer(
-    ple_log ~ 
+    ple_cfa ~ 
       day + beep + gender + age +
-       stressor_sum_centered_int * mss_neg_score  +
-       stressor_sum_centered_int * mss_pos_score  +
-       stressor_sum_centered_int * mss_dis_score  +
-      (stressor_sum_centered_int  | id_esm), data = model_dat)
+ #     stressor_higher * mss_neg_score  +
+      stressor_higher * mss_pos_score  +
+ #     stressor_higher * mss_dis_score  +
+      (stressor_higher | id_esm), data = model_dat)
 
-
-
-tab_model(m2, show.aicc = T, show.std = T)
-
-plot_model(m2, type = "diag")
-
-saveRDS(m2, "models/m2.rds")
-
-```
-
-alternative baseline model
-
-```{r}
-
-m0_alt <- 
-  lmer(
-     event_unpleasantness ~ 
-      day + beep + gender + age +
-      stressor_sum_centered_int + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
-
-
-tab_model(m0_alt, show.aicc = T, show.std = T)
-# plot_model(m0, type = "int")
-
-saveRDS(m0_alt, "models/m0_alt.rds")
-
-```
-
-Pos and neg schizotypy's moderation effect on PLE reactivity (ples ~ stressors) (without Disorg. schizotypy)
-
-```{r}
 m3 <- 
   lmer(
-     event_unpleasantness ~ 
+    ple_cfa ~ 
       day + beep + gender + age +
-      stressor_sum_centered_int * mss_neg_score +
-      stressor_sum_centered_int * mss_pos_score +
-    #  stressor_sum_centered_int * mss_dis_score + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+  #    stressor_higher * mss_neg_score  +
+  #    stressor_higher * mss_pos_score  +
+      stressor_higher * mss_dis_score  +
+      (stressor_higher | id_esm), data = model_dat)
 
-
-tab_model(m3, show.aicc = T, show.std = T)
-plot_model(m3, type = "diag")
-
-saveRDS(m3, "models/m3.rds")
-
-```
-
-Schizotypal trait's moderation effect on PLE reactivity (ples ~ stressors) (including Disorg. schizotypy!)
-
-```{r}
 m4 <- 
   lmer(
-     event_unpleasantness ~ 
+    ple_cfa ~ 
       day + beep + gender + age +
-      stressor_sum_centered_int * mss_neg_score +
-      stressor_sum_centered_int * mss_pos_score +
-      stressor_sum_centered_int * mss_dis_score + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+     stressor_higher * mss_neg_score  +
+     stressor_higher * mss_pos_score  +
+      stressor_higher * mss_dis_score  +
+      (stressor_higher | id_esm), data = model_dat)
 
 
-tab_model(m4, show.aicc = T, show.std = T)
-plot_model(m4, type = "int")
+tab_model(m0, m1, m2, m3, m4, show.aicc = T, show.std = T)
+# plot_model(m1, type = "diag")
 
+saveRDS(m0, "models/m0.rds")
+saveRDS(m1, "models/m1.rds")
+saveRDS(m2, "models/m2.rds")
+saveRDS(m3, "models/m3.rds")
 saveRDS(m4, "models/m4.rds")
 
 ```
 
 ```{r}
-tab_model(m0, m1, m2, show.std = T)
-tab_model(m0_alt, m3, m4, show.std = T)
+
+m5 <-  
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stressor_higher + 
+      (stressor_higher | id_esm), data = model_dat)
+
+
+m6 <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stressor_higher * mss_neg_score +
+     # stressor_higher * mss_pos_score +
+      #stressor_higher * mss_dis_score + 
+      (stressor_higher | id_esm), data = model_dat)
+
+
+m7 <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+    #  stressor_higher * mss_neg_score +
+      stressor_higher * mss_pos_score +
+    #  stressor_higher * mss_dis_score + 
+      (stressor_higher | id_esm), data = model_dat)
+
+m8 <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+    #  stressor_higher * mss_neg_score +
+     # stressor_higher * mss_pos_score +
+      stressor_higher * mss_dis_score + 
+      (stressor_higher | id_esm), data = model_dat)
+
+
+m9 <- 
+  lmer(
+     event_unpleasantness ~ 
+      day + beep + gender + age +
+      stress_control_cfa * mss_neg_score +
+      stress_control_cfa * mss_pos_score +
+      stress_control_cfa * mss_dis_score + 
+      (stress_control_cfa | id_esm), data = model_dat)
+
+
+tab_model(
+  m5,
+  m6,
+  m7,
+  m8,
+  m9,
+  show.aicc = T, show.std = T)
+# plot_model(m3, type = "diag")
+
+# saveRDS(m3, "models/m3.rds")
+
+saveRDS(m5, "models/m5.rds")
+saveRDS(m6, "models/m6.rds")
+saveRDS(m7, "models/m7.rds")
+saveRDS(m8, "models/m8.rds")
+saveRDS(m9, "models/m9.rds")
+
 ```
 
-Schizotypal traits in distinct models to avoid unseparable effects (can occur due to covariance between predictor variables) on ples
+### with the work-life balance factor
+
+```{r}
+m0 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_balance_cfa  + 
+      (stress_balance_cfa | id_esm), data = model_dat)
+
+m1 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_balance_cfa * mss_neg_score  +
+      #     stress_balance_cfa * mss_pos_score  +
+      #     stress_balance_cfa * mss_dis_score  +
+      (stress_balance_cfa | id_esm), data = model_dat)
+
+m2 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      #     stress_balance_cfa * mss_neg_score  +
+      stress_balance_cfa * mss_pos_score  +
+      #     stress_balance_cfa * mss_dis_score  +
+      (stress_balance_cfa | id_esm), data = model_dat)
+
+m3 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      #    stress_balance_cfa * mss_neg_score  +
+      #    stress_balance_cfa * mss_pos_score  +
+      stress_balance_cfa * mss_dis_score  +
+      (stress_balance_cfa | id_esm), data = model_dat)
+
+m4 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_balance_cfa * mss_neg_score  +
+      stress_balance_cfa * mss_pos_score  +
+      stress_balance_cfa * mss_dis_score  +
+      (stress_balance_cfa | id_esm), data = model_dat)
+
+
+tab_model(m0, m1, m2, m3, m4, show.aicc = T, show.std = T)
+# plot_model(m1, type = "diag")
+
+# saveRDS(m0, "models/m0.rds")
+# saveRDS(m1, "models/m1.rds")
+# saveRDS(m2, "models/m2.rds")
+# saveRDS(m3, "models/m3.rds")
+# saveRDS(m4, "models/m4.rds")
+
+```
+
 
 ```{r}
 
-m_pos <- 
+m5 <-  
   lmer(
-     ple_log ~ 
+    event_unpleasantness ~ 
       day + beep + gender + age +
-      # stressor_sum_centered_int * mss_neg_score +
-      stressor_sum_centered_int * mss_pos_score +
-      # stressor_sum_centered_int * mss_dis_score + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+      stress_balance_cfa + 
+      (stress_balance_cfa | id_esm), data = model_dat)
 
-m_neg <- 
+
+m6 <- 
   lmer(
-     ple_log ~ 
+    event_unpleasantness ~ 
       day + beep + gender + age +
-      stressor_sum_centered_int * mss_neg_score +
-      # stressor_sum_centered_int * mss_pos_score +
-      # stressor_sum_centered_int * mss_dis_score + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+      stress_balance_cfa * mss_neg_score +
+      # stress_balance_cfa * mss_pos_score +
+      #stress_balance_cfa * mss_dis_score + 
+      (stress_balance_cfa | id_esm), data = model_dat)
 
-m_dis <- 
+
+m7 <- 
   lmer(
-     ple_log ~ 
+    event_unpleasantness ~ 
       day + beep + gender + age +
-      # stressor_sum_centered_int * mss_neg_score +
-      # stressor_sum_centered_int * mss_pos_score +
-      stressor_sum_centered_int * mss_dis_score + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+      #  stress_balance_cfa * mss_neg_score +
+      stress_balance_cfa * mss_pos_score +
+      #  stress_balance_cfa * mss_dis_score + 
+      (stress_balance_cfa | id_esm), data = model_dat)
 
-tab_model(m_pos, m_neg, m_dis, show.aic = T, show.std = T)
+m8 <- 
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      #  stress_balance_cfa * mss_neg_score +
+      # stress_balance_cfa * mss_pos_score +
+      stress_balance_cfa * mss_dis_score + 
+      (stress_balance_cfa | id_esm), data = model_dat)
+
+
+m9 <- 
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      stress_balance_cfa * mss_neg_score +
+      stress_balance_cfa * mss_pos_score +
+      stress_balance_cfa * mss_dis_score + 
+      (stress_balance_cfa | id_esm), data = model_dat)
+
+
+tab_model(
+  m5,
+  m6,
+  m7,
+  m8,
+  m9,
+  show.aicc = T, show.std = T)
+# plot_model(m3, type = "diag")
+
+# saveRDS(m3, "models/m3.rds")
+
+# saveRDS(m5, "models/m5.rds")
+# saveRDS(m6, "models/m6.rds")
+# saveRDS(m7, "models/m7.rds")
+# saveRDS(m8, "models/m8.rds")
+# saveRDS(m9, "models/m9.rds")
 
 ```
 
-Schizotypal traits in distinct models to avoid unseparable effects (can occur due to covariance between predictor variables) on ples
+### with the social factor
+
+```{r}
+m0 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_social_cfa  + 
+      (stress_social_cfa | id_esm), data = model_dat)
+
+m1 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_social_cfa * mss_neg_score  +
+      #     stress_social_cfa * mss_pos_score  +
+      #     stress_social_cfa * mss_dis_score  +
+      (stress_social_cfa | id_esm), data = model_dat)
+
+m2 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      #     stress_social_cfa * mss_neg_score  +
+      stress_social_cfa * mss_pos_score  +
+      #     stress_social_cfa * mss_dis_score  +
+      (stress_social_cfa | id_esm), data = model_dat)
+
+m3 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      #    stress_social_cfa * mss_neg_score  +
+      #    stress_social_cfa * mss_pos_score  +
+      stress_social_cfa * mss_dis_score  +
+      (stress_social_cfa | id_esm), data = model_dat)
+
+m4 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_social_cfa * mss_neg_score  +
+      stress_social_cfa * mss_pos_score  +
+      stress_social_cfa * mss_dis_score  +
+      (stress_social_cfa | id_esm), data = model_dat)
+
+
+tab_model(m0, m1, m2, m3, m4, show.aicc = T, show.std = T)
+# plot_model(m1, type = "diag")
+
+# saveRDS(m0, "models/m0.rds")
+# saveRDS(m1, "models/m1.rds")
+# saveRDS(m2, "models/m2.rds")
+# saveRDS(m3, "models/m3.rds")
+# saveRDS(m4, "models/m4.rds")
+
+```
+
 
 ```{r}
 
-m_pos <- 
+m5 <-  
   lmer(
-     event_unpleasantness ~ 
+    event_unpleasantness ~ 
       day + beep + gender + age +
-      # stressor_sum_centered_int * mss_neg_score +
-      stressor_sum_centered_int * mss_pos_score +
-      # stressor_sum_centered_int * mss_dis_score + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+      stress_social_cfa + 
+      (stress_social_cfa | id_esm), data = model_dat)
 
-m_neg <- 
+
+m6 <- 
   lmer(
-     event_unpleasantness ~ 
+    event_unpleasantness ~ 
       day + beep + gender + age +
-      stressor_sum_centered_int * mss_neg_score +
-      # stressor_sum_centered_int * mss_pos_score +
-      # stressor_sum_centered_int * mss_dis_score + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+      stress_social_cfa * mss_neg_score +
+      # stress_social_cfa * mss_pos_score +
+      #stress_social_cfa * mss_dis_score + 
+      (stress_social_cfa | id_esm), data = model_dat)
 
-m_dis <- 
+
+m7 <- 
   lmer(
-     event_unpleasantness ~ 
+    event_unpleasantness ~ 
       day + beep + gender + age +
-      # stressor_sum_centered_int * mss_neg_score +
-      # stressor_sum_centered_int * mss_pos_score +
-      stressor_sum_centered_int * mss_dis_score + 
-      (stressor_sum_centered_int | id_esm), data = model_dat)
+      #  stress_social_cfa * mss_neg_score +
+      stress_social_cfa * mss_pos_score +
+      #  stress_social_cfa * mss_dis_score + 
+      (stress_social_cfa | id_esm), data = model_dat)
 
-tab_model(m_pos, m_neg, m_dis, show.aic = T, show.std = T)
+m8 <- 
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      #  stress_social_cfa * mss_neg_score +
+      # stress_social_cfa * mss_pos_score +
+      stress_social_cfa * mss_dis_score + 
+      (stress_social_cfa | id_esm), data = model_dat)
+
+
+m9 <- 
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      stress_social_cfa * mss_neg_score +
+      stress_social_cfa * mss_pos_score +
+      stress_social_cfa * mss_dis_score + 
+      (stress_social_cfa | id_esm), data = model_dat)
+
+
+tab_model(
+  m5,
+  m6,
+  m7,
+  m8,
+  m9,
+  show.aicc = T, show.std = T)
+# plot_model(m3, type = "diag")
+
+# saveRDS(m3, "models/m3.rds")
+
+# saveRDS(m5, "models/m5.rds")
+# saveRDS(m6, "models/m6.rds")
+# saveRDS(m7, "models/m7.rds")
+# saveRDS(m8, "models/m8.rds")
+# saveRDS(m9, "models/m9.rds")
 
 ```
+
+### with the control factor
+
+```{r}
+m0 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_control_cfa  + 
+      (stress_control_cfa | id_esm), data = model_dat)
+
+m1 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_control_cfa * mss_neg_score  +
+      #     stress_control_cfa * mss_pos_score  +
+      #     stress_control_cfa * mss_dis_score  +
+      (stress_control_cfa | id_esm), data = model_dat)
+
+m2 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      #     stress_control_cfa * mss_neg_score  +
+      stress_control_cfa * mss_pos_score  +
+      #     stress_control_cfa * mss_dis_score  +
+      (stress_control_cfa | id_esm), data = model_dat)
+
+m3 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      #    stress_control_cfa * mss_neg_score  +
+      #    stress_control_cfa * mss_pos_score  +
+      stress_control_cfa * mss_dis_score  +
+      (stress_control_cfa | id_esm), data = model_dat)
+
+m4 <- 
+  lmer(
+    ple_cfa ~ 
+      day + beep + gender + age +
+      stress_control_cfa * mss_neg_score  +
+      stress_control_cfa * mss_pos_score  +
+      stress_control_cfa * mss_dis_score  +
+      (stress_control_cfa | id_esm), data = model_dat)
+
+
+tab_model(m0, m1, m2, m3, m4, show.aicc = T, show.std = T)
+# plot_model(m1, type = "diag")
+
+# saveRDS(m0, "models/m0.rds")
+# saveRDS(m1, "models/m1.rds")
+# saveRDS(m2, "models/m2.rds")
+# saveRDS(m3, "models/m3.rds")
+# saveRDS(m4, "models/m4.rds")
+
+```
+
+
+```{r}
+
+m5 <-  
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      stress_control_cfa + 
+      (stress_control_cfa | id_esm), data = model_dat)
+
+
+m6 <- 
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      stress_control_cfa * mss_neg_score +
+      # stress_control_cfa * mss_pos_score +
+      #stress_control_cfa * mss_dis_score + 
+      (stress_control_cfa | id_esm), data = model_dat)
+
+
+m7 <- 
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      #  stress_control_cfa * mss_neg_score +
+      stress_control_cfa * mss_pos_score +
+      #  stress_control_cfa * mss_dis_score + 
+      (stress_control_cfa | id_esm), data = model_dat)
+
+m8 <- 
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      #  stress_control_cfa * mss_neg_score +
+      # stress_control_cfa * mss_pos_score +
+      stress_control_cfa * mss_dis_score + 
+      (stress_control_cfa | id_esm), data = model_dat)
+
+
+m9 <- 
+  lmer(
+    event_unpleasantness ~ 
+      day + beep + gender + age +
+      stress_control_cfa * mss_neg_score +
+      stress_control_cfa * mss_pos_score +
+      stress_control_cfa * mss_dis_score + 
+      (stress_control_cfa | id_esm), data = model_dat)
+
+
+tab_model(
+  m5,
+  m6,
+  m7,
+  m8,
+  m9,
+  show.aicc = T, show.std = T)
+# plot_model(m3, type = "diag")
+
+# saveRDS(m3, "models/m3.rds")
+
+# saveRDS(m5, "models/m5.rds")
+# saveRDS(m6, "models/m6.rds")
+# saveRDS(m7, "models/m7.rds")
+# saveRDS(m8, "models/m8.rds")
+# saveRDS(m9, "models/m9.rds")
+
+```
+
+
+
+
+
+
+

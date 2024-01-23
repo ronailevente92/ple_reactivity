@@ -148,21 +148,14 @@ level: 1
   
   stressor_total_w <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
   
-  # depr_latent_w =~ SCL_90_depr_diary_1+SCL_90_depr_diary_2+SCL_90_depr_diary_3+SCL_90_depr_diary_4+SCL_90_depr_diary_5+SCL_90_depr_diary_6+SCL_90_depr_diary_7+SCL_90_depr_diary_8+SCL_90_depr_diary_9+SCL_90_depr_diary_10+SCL_90_depr_diary_11+SCL_90_depr_diary_12+SCL_90_depr_diary_13
-  
-  SCL_90_depr_diary_1 ~ stressor_total_w
-    SCL_90_depr_diary_2 ~ stressor_total_w
+  # negaff stuff
 
   
 level: 2
 
   stressor_total_b <~ 1*stressor_9+stressor_10+stressor_11+stressor_12+stressor_13+stressor_15+stressor_16+stressor_17
 
-   # depr_latent_b =~ SCL_90_depr_diary_1+SCL_90_depr_diary_2+SCL_90_depr_diary_3+SCL_90_depr_diary_4+SCL_90_depr_diary_5+SCL_90_depr_diary_6+SCL_90_depr_diary_7+SCL_90_depr_diary_8+SCL_90_depr_diary_9+SCL_90_depr_diary_10+SCL_90_depr_diary_11+SCL_90_depr_diary_12+SCL_90_depr_diary_13
-   
-  SCL_90_depr_diary_1 ~ stressor_total_b
-      SCL_90_depr_diary_2 ~ stressor_total_b
-
+  # negaff stuff
 
   "
 
@@ -173,24 +166,6 @@ fit_formative_negaff <- lavaan::sem(stressor_formative_negaff, data = dat_depi_s
                                     cluster = "id_esm",
                                     estimator = "MLR")
 ```
-
-```{r}
-summary(fit_formative_negaff)
-```
-
-```{r}
-fitmeasures(
-  fit_formative_negaff, 
-  fit.measures = 
-    c(
-      "chisq", "df", "pvalue","CFI","TLI", "RMSEA", "srmr_within", "srmr_between"
-    )
-)
-```
-```{r}
-modificationindices(fit_formative_negaff) %>% arrange(-mi)
-```
-
 
 ## reflective models
 
@@ -212,61 +187,6 @@ prin <-
 ### confirmatory factor analysis with the stressor variables that show some variance
 
 #### correlated factors
-
-```{r}
-
-dat_cfa_stressor <-
-  dat_diary %>% 
-  select(id_esm, three_day_block, stressor_9, stressor_10, stressor_11,
-         stressor_12, stressor_13, stressor_15, stressor_16, stressor_17) %>%
-  filter_at(vars(stressor_9:stressor_17), all_vars(!is.na(.))) 
-  
-
-cfa_stressor_syntax <- '
-
-level: 1
-      stressor_I  =~ stressor_9 +  stressor_10 +  stressor_11
-      
-      stressor_II  =~ stressor_12 +  stressor_13 # +  stressor_17
-      
-      stressor_III  =~ stressor_15 +  stressor_16
-      
-      # stressor_I ~~ stressor_II
-      # stressor_II ~~ stressor_III
-      # stressor_I ~~ stressor_III
-      
-level: 2
-      stressor_I_b  =~ stressor_9 +  stressor_10 +  stressor_11
-      
-      stressor_II_b  =~ stressor_12 +  stressor_13 #+  stressor_17
-      
-      stressor_III_b  =~ stressor_15 +  stressor_16
-      
-      # stressor_I_b ~~ stressor_II_b
-      # stressor_II_b ~~ stressor_III_b
-      # stressor_I_b ~~ stressor_III_b
-'
-
-fit_stressor <- cfa(model = cfa_stressor_syntax, data = dat_cfa_stressor, std.lv = TRUE, cluster = "id_esm", estimator = "MLR")
-```
-
-```{r, warning = T}
-
-fitMeasures(fit_stressor, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
-```
-
-```{r}
-modificationindices(fit_stressor) %>% arrange(-mi)
-
-```
-
-
-```{r}
-summary(fit_stressor)
-```
-
-
-
 
 ```{r}
 #### hierarchical factors
@@ -318,7 +238,7 @@ summary(fit_stressor_hierarchical, std = T)
 
 ```{r}
 # reliability
-(reliability(fit_stressor_hierarchical))
+(semTools::reliability(fit_stressor_hierarchical))
 
 ```
 
@@ -340,8 +260,16 @@ dat_stressor_both_levels <-
   mutate(stress_balance_cfa =  stressor_I + stressor_I_b,
          stress_social_cfa =  stressor_II + stressor_II_b,
          stress_control_cfa =  stressor_III + stressor_III_b)
+```
 
-dat_diary <-
-  dat_diary %>% 
+
+```{r}
+model_dat <- read.csv("data_processed/model_dat.csv")
+
+model_dat_stressors <-
+  model_dat %>% 
   left_join(dat_stressor_both_levels, by = c("id_esm", "three_day_block"))
+
+write.csv(model_dat_stressors, "data_processed/model_dat_stressors.csv", row.names = F)
+
 ```

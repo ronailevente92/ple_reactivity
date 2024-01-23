@@ -28,7 +28,7 @@ big_data <- read.csv("data_processed/big_data.csv")
 
 dat_cleaned <- 
   big_data %>% 
-  select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary,
+  select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary, three_day_block,
          day, beep, event_pleasantness, sad, afraid, unrested, angry, irritated,
          contains(c("mss_", "ple_", "stressor")), -contains(c("minutes")))
 
@@ -113,7 +113,7 @@ modificationindices(fit_ple) %>%
 (inspect(fit_ple, what = "std")$id_esm$lambda)
 
 # reliability of NA model
-(reliability(fit_ple))
+(semTools::reliability(fit_ple))
 
 ```
 
@@ -271,7 +271,7 @@ summary(fit_mss, fit.measures = TRUE, standardize = TRUE)
 
 ```{r}
 # reliability of factors (omega)
-(reliability(fit_mss))
+(semTools::reliability(fit_mss))
 
 # factor loadings
 inspect(fit_mss, what = "std")$lambda
@@ -372,7 +372,7 @@ dat_cleaned <-
             .funs = list(centered = ~ scale(., scale = F, center = T))) %>% 
   distinct() %>% 
   ungroup() %>%
-  group_by(id_esm, diary_counter) %>% ###NE DATE DIARY SZERINT HANEM COUNTER!!!!
+  group_by(id_esm, diary_counter) %>%
   mutate(event_unpleasantness_3days_mean = mean(event_unpleasantness, na.rm = T)) %>% 
   ungroup() %>% 
   mutate(stressor_sum_centered_int = stressor_sum_centered * -1)
@@ -387,7 +387,7 @@ dat_cleaned <-
 
 model_dat <-
   dat_cleaned %>%
-  select(id_esm, session_esm, created_esm, edu, gender, age, city, start_date, date_diary, day, beep, diary_counter,
+  select(id_esm, session_esm, created_esm, edu, gender, age, city, start_date, date_diary, day, beep, diary_counter, three_day_block,
 
          event_unpleasantness, event_unpleasantness_centered, 
          
