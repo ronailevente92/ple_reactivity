@@ -29,6 +29,7 @@ suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(car))
 suppressPackageStartupMessages(library(broom))
 suppressPackageStartupMessages(library(performance))
+suppressPackageStartupMessages(library(lmeresampler))
 
 ```
 
@@ -66,7 +67,7 @@ m1 <-
   lmer(
     ple_cfa ~ 
       day + beep + gender + age +
-      stress_control_cfa * mss_neg_score  +
+      stressor_higher * mss_neg_score  +
  #     stressor_higher * mss_pos_score  +
  #     stressor_higher * mss_dis_score  +
       (stressor_higher | id_esm), data = model_dat)
@@ -75,7 +76,7 @@ m2 <-
   lmer(
     ple_cfa ~ 
       day + beep + gender + age +
- #     stressor_higher * mss_neg_score  +
+      stressor_higher * mss_neg_score  +
       stressor_higher * mss_pos_score  +
  #     stressor_higher * mss_dis_score  +
       (stressor_higher | id_esm), data = model_dat)
@@ -84,35 +85,129 @@ m3 <-
   lmer(
     ple_cfa ~ 
       day + beep + gender + age +
-  #    stressor_higher * mss_neg_score  +
-  #    stressor_higher * mss_pos_score  +
+      stressor_higher * mss_neg_score  +
+      stressor_higher * mss_pos_score  +
       stressor_higher * mss_dis_score  +
       (stressor_higher | id_esm), data = model_dat)
 
-m4 <- 
+m4 <-
   lmer(
-    ple_cfa ~ 
+    ple_cfa ~
       day + beep + gender + age +
-     stressor_higher * mss_neg_score  +
-     stressor_higher * mss_pos_score  +
+     # stressor_higher * mss_neg_score  +
+     # stressor_higher * mss_pos_score  +
       stressor_higher * mss_dis_score  +
       (stressor_higher | id_esm), data = model_dat)
 
 
-tab_model(m0, m1, m2, m3, m4, show.aicc = T, show.std = T)
-# plot_model(m1, type = "diag")
+m5 <-
+  lmer(
+    ple_cfa ~
+      day + beep + gender + age +
+     # stressor_higher * mss_neg_score  +
+      stressor_higher * mss_pos_score  +
+     # stressor_higher * mss_dis_score  +
+      (stressor_higher | id_esm), data = model_dat)
+
+
+tab_model(m0, m1, m2, m3, 
+          m4, m5,
+          show.aicc = T, show.std = T)
+
+plot_model(m3, type = "diag")
+vif(m3)
 
 saveRDS(m0, "models/m0.rds")
 saveRDS(m1, "models/m1.rds")
 saveRDS(m2, "models/m2.rds")
 saveRDS(m3, "models/m3.rds")
 saveRDS(m4, "models/m4.rds")
+saveRDS(m5, "models/m5.rds")
+
+
 
 ```
 
 ```{r}
+# boot_m3 <-
+#   bootstrap(
+#     m3,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# 
+# saveRDS(boot_m3, "models/boot_m3.rds")
+boot_m3 <- readRDS("models/boot_m3.rds")
+```
 
-m5 <-  
+```{r}
+list_case_m3 <- 
+  list(boot_m3)
+ci_boot_m3 <-
+  list_case_m3 %>%
+  map(confint, type = "norm")
+as.data.frame(ci_boot_m3) %>% print.data.frame(., digits = 2)
+
+```
+
+
+```{r}
+# extracting results into a tibble
+
+boot_dat_mod <- 
+  list_case_m3 %>% 
+  map("replicates") %>% 
+  
+map(
+    ~tibble(
+      Stress_Main = na.omit(.x$stressor_higher),
+      Disorganized_Main = na.omit(.x$mss_dis_score),
+      Positive_Main = na.omit(.x$mss_pos_score),
+      Negative_Main = na.omit(.x$mss_neg_score),
+      Disorganized_Stress_Interaction = na.omit(.x$"stressor_higher:mss_dis_score"),
+      Positive_Stress_Interaction = na.omit(.x$"stressor_higher:mss_pos_score"),
+      Negative_Stress_Interaction = na.omit(.x$"stressor_higher:mss_neg_score")
+      
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_long <- 
+  boot_dat_mod %>% 
+  pivot_longer(c(
+    Stress_Main, 
+    Disorganized_Main, 
+    Positive_Main,
+    Negative_Main,
+    Disorganized_Stress_Interaction,
+    Positive_Stress_Interaction,
+    Negative_Stress_Interaction), names_to = "predictor", values_to = "value")
+
+
+(plot_boot_1 <- 
+  ggplot(boot_dat_mod_long, aes(x = predictor, y = value, fill = predictor)) +
+  geom_violin(color = NA, alpha = 0.5)+
+  geom_boxplot(width = 0.2, fill = NA, outlier.shape = NA, lwd = 0.6) + 
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .4, size = .7) +
+  labs(
+       x  = "",
+       y = "Bootstrapped Interaction\nEstimates",
+       title = "In predicting PLEs",
+       ))
+```
+
+
+```{r}
+
+m6 <-  
   lmer(
      event_unpleasantness ~ 
       day + beep + gender + age +
@@ -120,7 +215,7 @@ m5 <-
       (stressor_higher | id_esm), data = model_dat)
 
 
-m6 <- 
+m7 <- 
   lmer(
      event_unpleasantness ~ 
       day + beep + gender + age +
@@ -130,54 +225,133 @@ m6 <-
       (stressor_higher | id_esm), data = model_dat)
 
 
-m7 <- 
-  lmer(
-     event_unpleasantness ~ 
-      day + beep + gender + age +
-    #  stressor_higher * mss_neg_score +
-      stressor_higher * mss_pos_score +
-    #  stressor_higher * mss_dis_score + 
-      (stressor_higher | id_esm), data = model_dat)
-
 m8 <- 
   lmer(
      event_unpleasantness ~ 
       day + beep + gender + age +
-    #  stressor_higher * mss_neg_score +
-     # stressor_higher * mss_pos_score +
+      stressor_higher * mss_neg_score +
+      stressor_higher * mss_pos_score +
       stressor_higher * mss_dis_score + 
       (stressor_higher | id_esm), data = model_dat)
-
 
 m9 <- 
   lmer(
      event_unpleasantness ~ 
       day + beep + gender + age +
-      stress_control_cfa * mss_neg_score +
-      stress_control_cfa * mss_pos_score +
-      stress_control_cfa * mss_dis_score + 
-      (stress_control_cfa | id_esm), data = model_dat)
+      stressor_higher * mss_neg_score +
+      stressor_higher * mss_pos_score +
+      stressor_higher * mss_dis_score + 
+      (stressor_higher | id_esm), data = model_dat)
+
+
+m10 <-
+  lmer(
+     event_unpleasantness ~
+      day + beep + gender + age +
+      # stressor_higher * mss_neg_score +
+      # stressor_higher * mss_pos_score +
+      stressor_higher * mss_dis_score +
+      (stressor_higher | id_esm), data = model_dat)
 
 
 tab_model(
-  m5,
   m6,
   m7,
   m8,
   m9,
+  m10,
   show.aicc = T, show.std = T)
-# plot_model(m3, type = "diag")
 
-# saveRDS(m3, "models/m3.rds")
+plot_model(m9, type = "diag")
+vif(m9)
 
-saveRDS(m5, "models/m5.rds")
 saveRDS(m6, "models/m6.rds")
 saveRDS(m7, "models/m7.rds")
 saveRDS(m8, "models/m8.rds")
 saveRDS(m9, "models/m9.rds")
+saveRDS(m10, "models/m10.rds")
+
 
 ```
 
+```{r}
+# boot_m9 <-
+#   bootstrap(
+#     m9,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# 
+# saveRDS(boot_m9, "models/boot_m9.rds")
+
+boot_m9 <- readRDS("models/boot_m9.rds")
+
+```
+
+```{r}
+list_case_m9 <- 
+  list(boot_m9)
+
+ci_boot_m9 <-
+  list_case_m9 %>%
+  map(confint, type = "norm")
+as.data.frame(ci_boot_m9) %>% print.data.frame(., digits = 2)
+
+```
+
+
+```{r}
+# extracting results into a tibble
+
+boot_dat_mod <- 
+  list_case_m9 %>% 
+  map("replicates") %>% 
+  
+map(
+    ~tibble(
+      Stress_Main = na.omit(.x$stressor_higher),
+      Disorganized_Main = na.omit(.x$mss_dis_score),
+      Positive_Main = na.omit(.x$mss_pos_score),
+      Negative_Main = na.omit(.x$mss_neg_score),
+      Disorganized_Stress_Interaction = na.omit(.x$"stressor_higher:mss_dis_score"),
+      Positive_Stress_Interaction = na.omit(.x$"stressor_higher:mss_pos_score"),
+      Negative_Stress_Interaction = na.omit(.x$"stressor_higher:mss_neg_score")
+      
+    )
+  ) %>%
+  bind_rows()
+
+# rearranging tibble format
+boot_dat_mod_long <- 
+  boot_dat_mod %>% 
+  pivot_longer(c(
+    Stress_Main, 
+    Disorganized_Main, 
+    Positive_Main,
+    Negative_Main,
+    Disorganized_Stress_Interaction,
+    Positive_Stress_Interaction,
+    Negative_Stress_Interaction), names_to = "predictor", values_to = "value")
+
+
+(plot_boot_1 <- 
+  ggplot(boot_dat_mod_long, aes(x = predictor, y = value, fill = predictor)) +
+  geom_violin(color = NA, alpha = 0.5)+
+  geom_boxplot(width = 0.2, fill = NA, outlier.shape = NA, lwd = 0.6) + 
+  theme_classic() +
+  scale_fill_brewer(palette = 'Dark2') +
+  guides(fill = 'none', color = 'none') +
+  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .4, size = .7) +
+  labs(
+       x  = "",
+       y = "Bootstrapped Interaction\nEstimates",
+       title = "In predicting event-unpleasantness",
+       ))
+```
 ### with the work-life balance factor
 
 ```{r}
