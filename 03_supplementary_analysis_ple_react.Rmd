@@ -674,28 +674,5 @@ model_dat %>%
 
 ```
 
-```{r}
 
-# Load the necessary library
-library(lme4)
-library(mlmpower)
-
-# Assume you have a fitted model 'fit' with random slope and intercept
-# fit <- lmer(y ~ x + (x|group), data = your_data)
-
-# Extract residual, fixed and random variances from the model
-residual_variance <- sigma(fit)^2
-fixed_variance <- var(as.numeric(fixef(fit)))
-random_variance <- as.data.frame(VarCorr(fit))$vcov
-
-# Now, you can use the mlmpower function for power analysis
-power_analysis <- mlmpower(fit, 
-                           residual.variance = residual_variance, 
-                           fixed.variance = fixed_variance, 
-                           random.variance = random_variance)
-
-# Print the result
-print(power_analysis)
-
-```
 

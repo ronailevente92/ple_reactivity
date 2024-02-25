@@ -204,18 +204,22 @@ cfa_stressor_hierarchical_syntax <- '
 level: 1
       stressor_I  =~ stressor_9 +  stressor_10 +  stressor_11
       
-      stressor_II  =~ stressor_12 +  stressor_13 # +  stressor_17
+      stressor_II  =~ stressor_12 +  stressor_13 # + stressor_17
       
       stressor_III  =~ stressor_15 +  stressor_16
       
-      stressor_higher  =~ stressor_I +  stressor_II +  stressor_III
+      stressor_higher  =~ stressor_I + stressor_II + stressor_III
+
       
 level: 2
       stressor_I_b  =~ stressor_9 +  stressor_10 +  stressor_11
       
-      stressor_II_b  =~ stressor_12 +  stressor_13 #+  stressor_17
+      stressor_II_b  =~ stressor_12 +  stressor_13 # + stressor_11
       
       stressor_III_b  =~ stressor_15 +  stressor_16
+      
+    #  stressor_higher_b  =~ stressor_I_b + stressor_II_b + stressor_III_b
+
       
 '
 
@@ -226,13 +230,27 @@ fit_stressor_hierarchical <- cfa(model = cfa_stressor_hierarchical_syntax, data 
 
 fitMeasures(fit_stressor_hierarchical, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr_within", "srmr_between"))
 ```
+
 ```{r}
 summary(fit_stressor_hierarchical, std = T)
+
 ```
+
+```{r}
+modificationindices(fit_stressor_hierarchical) %>% arrange(-mi)
+
+```
+
+
 ```{r}
 # within/betwwe-person factor loadings
 (inspect(fit_stressor_hierarchical, what = "std")$within$lambda)
 (inspect(fit_stressor_hierarchical, what = "std")$id_esm$lambda)
+```
+```{r}
+
+semTools::compRelSEM(fit_stressor_hierarchical, higher = "stressor_higher")
+
 ```
 
 
@@ -269,6 +287,7 @@ model_dat <- read.csv("data_processed/model_dat.csv")
 model_dat_stressors <-
   model_dat %>% 
   left_join(dat_stressor_both_levels, by = c("id_esm", "three_day_block"))
+
 
 write.csv(model_dat_stressors, "data_processed/model_dat_stressors.csv", row.names = F)
 
