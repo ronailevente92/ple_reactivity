@@ -418,15 +418,19 @@ boot_dat_mod_long <-
        ))
 ```
 
+```{r}
+m3 <- readRDS("models/m3.rds")
+m9 <- readRDS("models/m9.rds")
+
+```
 
 ```{r}
 summary(m3)
+tab_model(m3, )
 ```
-
 ```{r}
 summary(m9)
 ```
-
 
 ```{r}
 # Check if R packages are installed
@@ -463,11 +467,7 @@ shiny::runGist('6bac9d35c2521cc4fd91ce4b82490236')
 ```
 
 
-```{r}
-boot_m3 <- readRDS("models/boot_m3.rds")
-boot_m9 <- readRDS("models/boot_m9.rds")
 
-```
 
 ```{r}
 list_case_m3 <- 
