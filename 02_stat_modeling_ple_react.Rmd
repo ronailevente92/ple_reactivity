@@ -197,19 +197,3 @@ vif(m9)
 ```
 
 
-
-```{r}
-model_dat_stressors <- 
-  model_dat_stressors %>% 
-  dplyr::select(id_esm, diary_counter, stressor_higher, stressor_sum) %>% 
-  distinct()
-
-try <- 
-  lmer(stressor_sum ~ stressor_higher + (stressor_higher | id_esm), data = model_dat_stressors)
-
-tab_model(try, show.aicc = T, show.std = T)
-
-```
-
-
-
