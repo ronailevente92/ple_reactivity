@@ -53,15 +53,14 @@ model_dat <-
 
 ```
 
-### with the general stressor factor
+### ~ ple
 
 ```{r}
 m0 <- 
   lmer(
-     ple_cfa ~ 
-      day + beep + gender + age +
-      stressor_higher  + 
-      (stressor_higher | id_esm), data = model_dat)
+    ple_cfa ~ 
+      day + beep + gender + age + stressor_higher + (stressor_higher | id_esm), data = model_dat)
+
 
 m1 <- 
   lmer(
@@ -110,162 +109,25 @@ m5 <-
       (stressor_higher | id_esm), data = model_dat)
 
 
-tab_model(#m0, m1, m2, 
-          m3, 
-       #   m4, m5,
+tab_model(m0, m1, m2, 
+          m3, m4, m5,
           show.aicc = T, show.std = T)
 
+saveRDS(m0, "models/m0.rds")
+saveRDS(m1, "models/m1.rds")
+saveRDS(m2, "models/m2.rds")
+saveRDS(m3, "models/m3.rds")
+saveRDS(m4, "models/m4.rds")
+saveRDS(m5, "models/m5.rds")
+
+```
+
+```{r}
 plot_model(m3, type = "diag")
 vif(m3)
-
-# saveRDS(m0, "models/m0.rds")
-# saveRDS(m1, "models/m1.rds")
-# saveRDS(m2, "models/m2.rds")
-# saveRDS(m3, "models/m3.rds")
-# saveRDS(m4, "models/m4.rds")
-# saveRDS(m5, "models/m5.rds")
-
-
-
 ```
 
-```{r}
-# boot_m3 <-
-#   bootstrap(
-#     m3,
-#     .f = fixef,
-#     type = "wild",
-#     hccme =  "hc2",
-#     aux.dist = "mammen",
-#     B = 5000 ,
-#     resample = c(TRUE, TRUE)
-#   )
-# 
-# saveRDS(boot_m3, "models/boot_m3.rds")
-boot_m3 <- readRDS("models/boot_m3.rds")
-```
-
-```{r}
-list_case_m3 <- 
-  list(boot_m3)
-ci_boot_m3 <-
-  list_case_m3 %>%
-  map(confint, type = "norm")
-as.data.frame(ci_boot_m3) %>% print.data.frame(., digits = 2)
-
-```
-
-
-```{r}
-# extracting results into a tibble
-
-boot_dat_mod_3 <- 
-  list_case_m3 %>% 
-  map("replicates") %>% 
-  
-map(
-    ~tibble(
-      Stress_Main = na.omit(.x$stressor_higher),
-      Disorganized_Main = na.omit(.x$mss_dis_score),
-      Positive_Main = na.omit(.x$mss_pos_score),
-      Negative_Main = na.omit(.x$mss_neg_score),
-      Disorganized_Stress_Interaction = na.omit(.x$"stressor_higher:mss_dis_score"),
-      Positive_Stress_Interaction = na.omit(.x$"stressor_higher:mss_pos_score"),
-      Negative_Stress_Interaction = na.omit(.x$"stressor_higher:mss_neg_score")
-      
-    )
-  ) %>%
-  bind_rows() %>% 
-  mutate(main_diff = Disorganized_Main - Positive_Main,
-         int_diff = Disorganized_Stress_Interaction - Positive_Stress_Interaction)
-```
-
-
-```{r}
-remotes::install_github("coolbutuseless/ggpattern")
-library("ggpattern")
-
-
-# rearranging tibble format
-boot_dat_mod_long <- 
-  boot_dat_mod_3 %>% 
-  pivot_longer(c(
-    Disorganized_Main, 
-    Positive_Main,
-    Negative_Main,
-    Disorganized_Stress_Interaction,
-    Positive_Stress_Interaction,
-    Negative_Stress_Interaction), names_to = "predictor", values_to = "value")
-
-
-boot_dat_mod_long_diff <- 
-  boot_dat_mod_3 %>% 
-  pivot_longer(c(
-    main_diff,
-    int_diff), names_to = "predictor", values_to = "value")
-
-
-boot_dat_mod_long <- 
-  boot_dat_mod_3 %>% 
-  pivot_longer(c(
-    Disorganized_Main, 
-    Positive_Main,
-    main_diff,
-    Disorganized_Stress_Interaction,
-    Positive_Stress_Interaction,
-    int_diff), names_to = "predictor", values_to = "value")
-
-
-# (plot_boot_1 <- 
-#   ggplot(boot_dat_mod_long, aes(x = predictor, y = value, fill = predictor)) +
-#   geom_violin(color = NA, alpha = 0.5)+
-#   geom_boxplot(width = 0.2, fill = NA, outlier.shape = NA, lwd = 0.6) + 
-#   theme_classic() +
-#   scale_fill_brewer(palette = 'Dark2') +
-#   guides(fill = 'none', color = 'none') +
-#   geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .4, size = .7) +
-#   labs(
-#        x  = "",
-#        y = "Bootstrapped Interaction\nEstimates",
-#        title = "In predicting PLEs",
-#        ))
-```
-
-
-```{r}
-boot_dat_mod_long %>%
-  ggplot(aes(x = value)) +
-  geom_histogram(aes(fill = value > 0), binwidth = 0.02) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
-  guides(fill = FALSE) +
-  theme_bw() +
-  facet_wrap(vars(predictor), ncol = 2) +
-
-#  labs(x = "Counts", y = "Fél ") +
- # ggtitle("Differences between bootstrapped estimates of disorg. and positive domain") +
-  geom_vline(xintercept = 0, color = "black", size = 1.2)
-
-
-"#7570B3"
-"#1B9E77"
-"#d95f02"
-
-boot_dat_mod_long %>%
-  ggplot(aes(x = value)) +
-  geom_density_pattern(
-    aes(pattern_fill = value > 0), 
-    pattern = 'stripe',
-    fill = "white",
-    colour  = 'black',
-    binwidth = 0.01,
-    pattern_density = 0.6) +
-  theme_bw() +
-  facet_wrap(vars(predictor), ncol = 3) +
-  guides(pattern_fill = FALSE)
-
-
-    # colour  = 'black')
-```
-
+### ~ event unpleasantness
 
 ```{r}
 
@@ -275,7 +137,6 @@ m6 <-
       day + beep + gender + age +
       stressor_higher + 
       (stressor_higher | id_esm), data = model_dat)
-
 
 m7 <- 
   lmer(
@@ -317,15 +178,8 @@ m10 <-
 
 
 tab_model(
- # m6,
-#  m7,
-#  m8,
-  m9,
-#  m10,
+  m6, m7, m8, m9, m10,
   show.aicc = T, show.std = T)
-
-plot_model(m9, type = "diag")
-vif(m9)
 
 saveRDS(m6, "models/m6.rds")
 saveRDS(m7, "models/m7.rds")
@@ -336,215 +190,24 @@ saveRDS(m10, "models/m10.rds")
 
 ```
 
-```{r}
-# boot_m9 <-
-#   bootstrap(
-#     m9,
-#     .f = fixef,
-#     type = "wild",
-#     hccme =  "hc2",
-#     aux.dist = "mammen",
-#     B = 5000 ,
-#     resample = c(TRUE, TRUE)
-#   )
-# 
-# saveRDS(boot_m9, "models/boot_m9.rds")
-
-boot_m9 <- readRDS("models/boot_m9.rds")
-
-```
 
 ```{r}
-list_case_m9 <- 
-  list(boot_m9)
-
-ci_boot_m9 <-
-  list_case_m9 %>%
-  map(confint, type = "norm")
-as.data.frame(ci_boot_m9) %>% print.data.frame(., digits = 2)
-
+plot_model(m9, type = "diag")
+vif(m9)
 ```
 
 
-```{r}
-# extracting results into a tibble
-
-boot_dat_mod <- 
-  list_case_m9 %>% 
-  map("replicates") %>% 
-  
-map(
-    ~tibble(
-      Stress_Main = na.omit(.x$stressor_higher),
-      Disorganized_Main = na.omit(.x$mss_dis_score),
-      Positive_Main = na.omit(.x$mss_pos_score),
-      Negative_Main = na.omit(.x$mss_neg_score),
-      Disorganized_Stress_Interaction = na.omit(.x$"stressor_higher:mss_dis_score"),
-      Positive_Stress_Interaction = na.omit(.x$"stressor_higher:mss_pos_score"),
-      Negative_Stress_Interaction = na.omit(.x$"stressor_higher:mss_neg_score")
-      
-    )
-  ) %>%
-  bind_rows()
-```
-
 
 ```{r}
-# rearranging tibble format
-boot_dat_mod_long <- 
-  boot_dat_mod %>% 
-  pivot_longer(c(
-    Stress_Main, 
-    Disorganized_Main, 
-    Positive_Main,
-    Negative_Main,
-    Disorganized_Stress_Interaction,
-    Positive_Stress_Interaction,
-    Negative_Stress_Interaction), names_to = "predictor", values_to = "value")
+model_dat_stressors <- 
+  model_dat_stressors %>% 
+  dplyr::select(id_esm, diary_counter, stressor_higher, stressor_sum) %>% 
+  distinct()
 
+try <- 
+  lmer(stressor_sum ~ stressor_higher + (stressor_higher | id_esm), data = model_dat_stressors)
 
-(plot_boot_1 <- 
-  ggplot(boot_dat_mod_long, aes(x = predictor, y = value, fill = predictor)) +
-  geom_violin(color = NA, alpha = 0.5)+
-  geom_boxplot(width = 0.2, fill = NA, outlier.shape = NA, lwd = 0.6) + 
-  theme_classic() +
-  scale_fill_brewer(palette = 'Dark2') +
-  guides(fill = 'none', color = 'none') +
-  geom_hline(yintercept = 0, color = "black", linetype = 2, alpha = .4, size = .7) +
-  labs(
-       x  = "",
-       y = "Bootstrapped Interaction\nEstimates",
-       title = "In predicting event-unpleasantness",
-       ))
-```
-
-
-```{r}
-summary(m3)
-```
-
-```{r}
-summary(m9)
-```
-
-
-```{r}
-# Check if R packages are installed
-
-# list.of.packages = c("htmltools","shiny","htmltools","shiny","DT","nlme","ggplot2","gridExtra",
-# "data.table","plyr","dplyr","formattable","tidyr","MASS","shinyjs","compiler","future.apply","devtools")
-# new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-# if(length(new.packages)) install.packages(new.packages)
-
-library(htmltools)
-library(shiny)
-library(DT)
-library(nlme)
-library(ggplot2)
-library(gridExtra)
-library(data.table)
-library(plyr)
-library(dplyr)
-library(formattable)
-library(tidyr)
-library(MASS)
-library(shinyjs)
-library(compiler)
-library(future.apply)
-
-# library(devtools)
-# devtools::install_github("ginettelafit/PowerAnalysisIL", force = T)
-
-library(PowerAnalysisIL)
-
-# Using Gist: users can launch this app with:
-shiny::runGist('6bac9d35c2521cc4fd91ce4b82490236')
-
-```
-
-
-```{r}
-boot_m3 <- readRDS("models/boot_m3.rds")
-boot_m9 <- readRDS("models/boot_m9.rds")
-
-```
-
-```{r}
-list_case_m3 <- 
-  list(boot_m3)
-
-boot_dat_mod_3 <- 
-  list_case_m3 %>% 
-  map("replicates") %>% 
-  
-map(
-    ~tibble(
-      Stress_Main = na.omit(.x$stressor_higher),
-      Disorganized_Main = na.omit(.x$mss_dis_score),
-      Positive_Main = na.omit(.x$mss_pos_score),
-      Negative_Main = na.omit(.x$mss_neg_score),
-      Disorganized_Stress_Interaction = na.omit(.x$"stressor_higher:mss_dis_score"),
-      Positive_Stress_Interaction = na.omit(.x$"stressor_higher:mss_pos_score"),
-      Negative_Stress_Interaction = na.omit(.x$"stressor_higher:mss_neg_score")
-      
-    )
-  ) %>%
-  bind_rows() %>% 
-  mutate(diff_main_ple = Disorganized_Main - Positive_Main,
-         diff_int_ple = Disorganized_Stress_Interaction - Positive_Stress_Interaction) %>% 
-  select(diff_main_ple, diff_int_ple)
-  
-```
-
-```{r}
-list_case_m9 <- 
-  list(boot_m9)
-
-boot_dat_mod_9 <- 
-  list_case_m9 %>% 
-  map("replicates") %>% 
-  
-map(
-    ~tibble(
-      Stress_Main = na.omit(.x$stressor_higher),
-      Disorganized_Main = na.omit(.x$mss_dis_score),
-      Positive_Main = na.omit(.x$mss_pos_score),
-      Negative_Main = na.omit(.x$mss_neg_score),
-      Disorganized_Stress_Interaction = na.omit(.x$"stressor_higher:mss_dis_score"),
-      Positive_Stress_Interaction = na.omit(.x$"stressor_higher:mss_pos_score"),
-      Negative_Stress_Interaction = na.omit(.x$"stressor_higher:mss_neg_score")
-      
-    )
-  ) %>%
-  bind_rows() %>% 
-  mutate(diff_main_event = Disorganized_Main - Positive_Main,
-         diff_int_event = Disorganized_Stress_Interaction - Positive_Stress_Interaction) %>% 
-  select(diff_int_event, diff_main_event)
-```
-
-
-```{r}
-diff_to_plot <- 
-  boot_dat_mod_9 %>% 
-  cbind(boot_dat_mod_3)
-```
-
-
-```{r}
-
-diff_to_plot <- 
-  diff_to_plot %>% 
-  pivot_longer(c(diff_main_event, diff_main_ple, diff_int_event, diff_int_ple), names_to = "variable", values_to = "value")
-
-diff_to_plot %>%
-  ggplot(aes(x = value)) +
-  geom_histogram(aes(fill = value > 0), binwidth = 0.02) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
-  guides(fill = FALSE) +
-  theme_bw() +
-  facet_wrap(vars(variable), ncol = 2) +
-  labs(x = "Counts", y = "Fél ") +
-  ggtitle("Differences between bootstrapped estimates of disorg. and positive domain") +
-  geom_vline(xintercept = 0, color = "black", size = 1.2)
+tab_model(try, show.aicc = T, show.std = T)
 
 ```
 

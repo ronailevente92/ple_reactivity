@@ -1,0 +1,65 @@
+---
+title: "05_power_analysis"
+author: "Levente Ronai"
+date: "2024-04-08"
+output: html_document
+---
+
+```{r, include=F}
+
+options(scipen = 999)
+
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(dplyr))
+
+```
+
+### power analysis
+
+```{r, include=F}
+
+m3 <- readRDS("models/m3.rds")
+summary(m3)
+
+```
+
+```{r, include=F}
+
+m9 <- readRDS("models/m9.rds")
+summary(m9)
+```
+
+
+```{r, include=F}
+# Check if R packages are installed
+
+# list.of.packages = c("htmltools","shiny","htmltools","shiny","DT","nlme","ggplot2","gridExtra",
+# "data.table","plyr","dplyr","formattable","tidyr","MASS","shinyjs","compiler","future.apply","devtools")
+# new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages)) install.packages(new.packages)
+
+library(htmltools)
+library(shiny)
+library(DT)
+library(nlme)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(plyr)
+library(dplyr)
+library(formattable)
+library(tidyr)
+library(MASS)
+library(shinyjs)
+library(compiler)
+library(future.apply)
+
+# library(devtools)
+# devtools::install_github("ginettelafit/PowerAnalysisIL", force = T)
+
+library(PowerAnalysisIL)
+
+# Using Gist: users can launch this app with:
+shiny::runGist('6bac9d35c2521cc4fd91ce4b82490236')
+
+```
