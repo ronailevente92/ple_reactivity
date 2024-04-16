@@ -423,6 +423,19 @@ model_dat %>%
       median_event_unpleasantness = median(event_unpleasantness),
       sd_event_unpleasantness    = sd(event_unpleasantness)
   )
+  
+# descriptives of stressor exposure
+  model_dat %>% 
+    filter(!is.na(date_diary) & !is.na(stressor_sum)) %>% 
+    select(id_esm, date_diary, stressor_sum) %>%
+    unique() %>%
+    summarise(
+      max_stressor_sum    = max(stressor_sum),
+      min_stressor_sum    = min(stressor_sum),
+      mean_stressor_sum   = mean(stressor_sum),
+      median_stressor_sum = median(stressor_sum),
+      sd_stressor_sum     = sd(stressor_sum)
+    )
 ```
 
 ## adding mss scores to model_dat_distinct
