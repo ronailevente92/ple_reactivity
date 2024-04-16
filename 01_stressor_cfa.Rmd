@@ -51,8 +51,8 @@ dat_diary <-
 
 ```{r}
 dat_diary %>% 
-  select(stressor_1:stressor_19, stressor_21, SCL_90_depr_diary_1:SCL_90_depr_diary_13) %>% 
-  pivot_longer(stressor_1:SCL_90_depr_diary_13, names_to = "stressor_no", values_to = "score") %>% 
+  select(stressor_1:stressor_19, stressor_21) %>% 
+  pivot_longer(stressor_1:stressor_21, names_to = "stressor_no", values_to = "score") %>% 
   ggplot(aes(score)) + 
   geom_histogram() + 
   facet_wrap(~stressor_no)
@@ -63,7 +63,9 @@ dat_diary %>%
 ```{r}
 dat_diary %>% 
     pivot_longer(stressor_1:stressor_18, names_to = "stressor_no", values_to = "score") %>% 
-  count(stressor_no, score)
+  count(stressor_no, score) %>% 
+  filter(!is.na(score)) %>% 
+  arrange(stressor_no)
 ```
 
 ## reflective models
@@ -108,6 +110,7 @@ level: 1
       stressor_III  =~ stressor_15 +  stressor_16
       
       stressor_higher  =~ stressor_I + stressor_II + stressor_III
+    
 
       
 level: 2
@@ -148,7 +151,7 @@ modificationindices(fit_stressor_hierarchical) %>% arrange(-mi)
 ```
 ```{r}
 
-compRelSEM(fit_stressor_hierarchical, tau.eq = F, higher = c("higher_stressor"))
+compRelSEM(fit_stressor_hierarchical, tau.eq = F, dropSingle = F)
 
 ```
 
@@ -190,4 +193,23 @@ model_dat_stressors <-
 
 write.csv(model_dat_stressors, "data_processed/model_dat_stressors.csv", row.names = F)
 
+```
+
+
+```{r}
+
+mean_dat <- 
+  dat_cleaned %>% 
+  # group_by(id_esm, diary_counter) %>% 
+  mutate(stressor_mean = rowMeans(select(., c(stressor_1:stressor_19, stressor_21)), na.rm = T)) %>% 
+  select(id_esm, three_day_block, stressor_sum, stressor_mean) %>% 
+  distinct()
+
+kasufha <-
+  lmer(stressor_mean ~ 1 + (1|id_esm), data = mean_dat)
+
+
+summary(kasufha)
+
+tab_model(kasufha)
 ```

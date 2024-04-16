@@ -40,22 +40,77 @@ import data
 ```{r}
 dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 
-model_dat_stressors <- read.csv("data_processed/model_dat_stressors.csv")
-```
-
-
-```{r}
-
-model_dat <- 
-  model_dat_stressors  %>% 
-  mutate(stressor_higher = stressor_higher * -1,
-         stress_balance_cfa = stress_balance_cfa * -1,
-         stress_social_cfa = stress_social_cfa * -1,
-         stress_control_cfa = stress_control_cfa * -1) # the higher the value, the greater the exposure to stress
-
+model_dat <- read.csv("data_processed/model_dat.csv")
 ```
 
 ```{r}
+
+# m_baseline_ple_detrended <- readRDS("models/m_baseline_ple_detrended.rds")
+# 
+# boot_baseline_ple_detrended <-
+#   bootstrap(
+#     m_baseline_ple_detrended,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# 
+# saveRDS(boot_baseline_ple_detrended, "models/boot_baseline_ple_detrended.rds")
+
+boot_baseline_ple_detrended <- readRDS("models/boot_baseline_ple_detrended.rds")
+
+```
+
+```{r}
+list_case_ple_baseline <- 
+  list(boot_baseline_ple_detrended)
+ci_boot_baseline_ple_detrended <-
+  list_case_ple_baseline %>%
+  map(confint, type = "norm")
+
+
+as.data.frame(ci_boot_baseline_ple_detrended) %>% print.data.frame(., digits = 2)
+
+```
+
+```{r}
+
+# m_baseline_event_detrended <- readRDS("models/m_baseline_event_detrended.rds")
+# 
+# boot_baseline_event_detrended <-
+#   bootstrap(
+#     m_baseline_event_detrended,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# 
+# saveRDS(boot_baseline_event_detrended, "models/boot_baseline_event_detrended.rds")
+
+boot_baseline_event_detrended <- readRDS("models/boot_baseline_event_detrended.rds")
+
+```
+
+```{r}
+list_case_event_baseline <- 
+  list(boot_baseline_event_detrended)
+ci_boot_baseline_event_detrended <-
+  list_case_event_baseline %>%
+  map(confint, type = "norm")
+as.data.frame(ci_boot_baseline_event_detrended) %>% print.data.frame(., digits = 2)
+
+```
+
+```{r}
+
+# m3 <- readRDS("models/m3.rds")
+# 
 # boot_m3 <-
 #   bootstrap(
 #     m3,
@@ -68,6 +123,7 @@ model_dat <-
 #   )
 # 
 # saveRDS(boot_m3, "models/boot_m3.rds")
+
 boot_m3 <- readRDS("models/boot_m3.rds")
 ```
 
@@ -80,19 +136,22 @@ ci_boot_m3 <-
 as.data.frame(ci_boot_m3) %>% print.data.frame(., digits = 2)
 
 ```
+
 ```{r}
-# boot_m9 <-
-#   bootstrap(
-#     m9,
-#     .f = fixef,
-#     type = "wild",
-#     hccme =  "hc2",
-#     aux.dist = "mammen",
-#     B = 5000 ,
-#     resample = c(TRUE, TRUE)
-#   )
-# 
-# saveRDS(boot_m9, "models/boot_m9.rds")
+m9 <- readRDS("models/m9.rds")
+
+boot_m9 <-
+  bootstrap(
+    m9,
+    .f = fixef,
+    type = "wild",
+    hccme =  "hc2",
+    aux.dist = "mammen",
+    B = 5000 ,
+    resample = c(TRUE, TRUE)
+  )
+
+saveRDS(boot_m9, "models/boot_m9.rds")
 
 boot_m9 <- readRDS("models/boot_m9.rds")
 
@@ -118,19 +177,21 @@ boot_dat_mod_3 <-
   
 map(
     ~tibble(
-      Stress_Main = na.omit(.x$stressor_higher),
+      Stress_Main = na.omit(.x$stressor_mean_centered_int),
       Disorganized_Main = na.omit(.x$mss_dis_score),
       Positive_Main = na.omit(.x$mss_pos_score),
       Negative_Main = na.omit(.x$mss_neg_score),
-      Disorganized_Stress_Interaction = na.omit(.x$"stressor_higher:mss_dis_score"),
-      Positive_Stress_Interaction = na.omit(.x$"stressor_higher:mss_pos_score"),
-      Negative_Stress_Interaction = na.omit(.x$"stressor_higher:mss_neg_score")
+      Disorganized_Stress_Interaction = na.omit(.x$"stressor_mean_centered_int:mss_dis_score"),
+      Positive_Stress_Interaction = na.omit(.x$"stressor_mean_centered_int:mss_pos_score"),
+      Negative_Stress_Interaction = na.omit(.x$"stressor_mean_centered_int:mss_neg_score")
       
     )
   ) %>%
   bind_rows() %>% 
-  mutate(main_diff = Disorganized_Main - Positive_Main,
-         int_diff = Disorganized_Stress_Interaction - Positive_Stress_Interaction)
+  mutate(main_diff_dispos = Disorganized_Main - Positive_Main,
+         int_diff_dispos = Disorganized_Stress_Interaction - Positive_Stress_Interaction,
+         main_diff_disneg = Disorganized_Main - Negative_Main,
+         int_diff_disneg = Disorganized_Stress_Interaction - Negative_Stress_Interaction)
   
 ```
 
@@ -138,17 +199,21 @@ map(
 ```{r}
 boot_dat_mod_3 <- 
   boot_dat_mod_3%>%
-  select(-contains("Negative"), -Stress_Main)
+  select(-Stress_Main)
   
 boot_dat_mod_long_3 <- 
   boot_dat_mod_3 %>%
     pivot_longer(c(
     Disorganized_Main, 
     Positive_Main,
+    Negative_Main,
     Disorganized_Stress_Interaction,
     Positive_Stress_Interaction,
-    main_diff,
-    int_diff), names_to = "predictor", values_to = "value")
+    Negative_Stress_Interaction,
+    main_diff_dispos,
+    int_diff_dispos,
+    main_diff_disneg,
+    int_diff_disneg), names_to = "predictor", values_to = "value")
   
   
 boot_dat_mod_long_3 <- 
@@ -157,20 +222,32 @@ boot_dat_mod_long_3 <-
                         "diz",
                         ifelse((predictor == "Positive_Main" & value > 0),
                                "poz",
-                               ifelse((predictor == "main_diff" & value > 0),
-                                      "diz",
-                                      ifelse((predictor == "int_diff" & value > 0),
-                                             "diz",
-                                             ifelse((predictor == "main_diff" & value < 0),
-                                                    "poz",
-                                                    ifelse((predictor == "int_diff" & value < 0),
-                                                           "poz",
-                                                           ifelse((predictor == "Disorganized_Stress_Interaction" & value > 0),
-                                                                  "diz",
-                                                                  ifelse((predictor == "Positive_Stress_Interaction" & value > 0),
-                                                                         "poz",
-                                                                         "graj"))))))))) %>% 
-  mutate(color = factor(color, levels = c("diz", "poz", "graj"), labels = c("#1B9E77", "#d95f02", "#6E6E6E")))
+                        ifelse((predictor == "Negative_Main" & value > 0),
+                               "neg",
+                        ifelse((predictor == "main_diff_dispos" & value > 0),
+                               "diz",
+                        ifelse((predictor == "int_diff_dispos" & value > 0),
+                               "diz",
+                        ifelse((predictor == "main_diff_dispos" & value < 0),
+                               "poz",
+                        ifelse((predictor == "int_diff_dispos" & value < 0),
+                               "poz",
+                        ifelse((predictor == "main_diff_disneg" & value > 0),
+                               "diz",
+                        ifelse((predictor == "int_diff_disneg" & value > 0),
+                               "diz",
+                        ifelse((predictor == "main_diff_disneg" & value < 0),
+                               "neg",
+                        ifelse((predictor == "int_diff_disneg" & value < 0),
+                               "neg",
+                        ifelse((predictor == "Disorganized_Stress_Interaction" & value > 0),
+                               "diz",
+                        ifelse((predictor == "Positive_Stress_Interaction" & value > 0),
+                               "poz",
+                        ifelse((predictor == "Negative_Stress_Interaction" & value > 0),
+                               "neg",
+                               "graj"))))))))))))))) %>% 
+  mutate(color = factor(color, levels = c("diz", "neg", "poz", "graj"), labels = c("#1B9E77", "#7570B3", "#d95f02","#6E6E6E")))
 
 ```
 
@@ -183,25 +260,32 @@ pred_names <- c(
   
   Disorganized_Main = "In predicting momentary PLEs",
   Positive_Main = "",
-  main_diff = "In predicting momentary PLEs",
+  Negative_Main = "",
+  main_diff_dispos = "",
+  main_diff_disneg = "In predicting momentary PLEs",
   Disorganized_Stress_Interaction = "In predicting momentary PLE-reactivity",
   Positive_Stress_Interaction = "",
-  int_diff = "In predicting momentary PLE-reactivity")
+  Negative_Stress_Interaction = "",
+  int_diff_dispos = "",
+  int_diff_disneg = "In predicting momentary PLE-reactivity")
 
 
 
 boot_dat_mod_long_3 %>%
-  filter(predictor != "int_diff" & predictor != "main_diff") %>%
+  filter(predictor != "int_diff_dispos" & predictor != "main_diff_dispos" & predictor != "int_diff_disneg" & predictor != "main_diff_disneg") %>%
   ggplot(aes(x = value)) +
   geom_histogram(aes(fill = color), binwidth = 0.01) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
-  guides(fill = FALSE) +
-  theme_minimal() +
+
+  theme_minimal() + 
+  # theme(legend.key.size = unit(3, 'lines'),
+  #                         legend.key = element_rect(size = 10, color = "white")) +
+  
   facet_wrap(vars(predictor), ncol = 2, labeller = as_labeller(pred_names)) +
-  labs(x = "Bootstrapped estimates",
+  labs(x = "Bootstrapped estimates of multilevel model coefficients",
        y = "Frequencies") +
-scale_fill_manual(values = alpha(c("#1B9E77", "#d95f02"), 0.7), limits = c("#1B9E77", "#d95f02"), labels = c("Disorganized", "Positive")) +
-  guides(fill = guide_legend(title = "Positive est.:")) +
-  geom_vline(xintercept = 0, color = "black", size = 1.3) 
+scale_fill_manual(values = alpha(c("#1B9E77", "#7570B3", "#d95f02"), 0.8), limits = c("#1B9E77", "#7570B3", "#d95f02"), labels = c("Disorganized","Negative",  "Positive")) +
+  guides(fill = guide_legend(title = "Positive coef.:")) +
+  geom_vline(xintercept = 0, color = "black", size = 1)
 
 
 
@@ -209,24 +293,26 @@ scale_fill_manual(values = alpha(c("#1B9E77", "#d95f02"), 0.7), limits = c("#1B9
 
 ```{r}
 boot_dat_mod_long_3 %>%
-  filter(predictor == "int_diff" | predictor == "main_diff") %>%
+  filter(predictor == "int_diff_dispos" | predictor == "main_diff_dispos" | predictor == "int_diff_disneg" | predictor == "main_diff_disneg") %>%
   ggplot(aes(x = value)) +
-  geom_histogram(aes(fill = color), binwidth = 0.01) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
+  geom_histogram(aes(fill = color), binwidth = 0.02) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
   theme_minimal() +
-  facet_wrap(vars(predictor), ncol = 1, labeller = as_labeller(pred_names)) +
-  labs(x = bquote(~ italic("Differences") ~ "between single bootstrapped estimates"),
+  facet_wrap(vars(predictor), ncol = 2, labeller = as_labeller(pred_names)) +
+  labs(x = bquote(~ italic("Differences") ~ "between single bootstrapped estimates of model coefficents"),
        y = "Frequencies") +
   
 #  labs(x = "Distriibution of differences between bootstrapped estimates", y = "Freqiencies") +
 # ggtitle("Differences between bootstrapped estimates of disorg. and positive domain") +
-  scale_fill_manual(values = alpha(c("#1B9E77", "#d95f02"), 0.7), labels = c("Disorganized", "Positive")) +
-  guides(fill = guide_legend(title = "Stronger predictor:")) +
-  geom_vline(xintercept = 0, color = "black", size = 1.3)
+scale_fill_manual(values = alpha(c("#1B9E77", "#7570B3", "#d95f02"), 0.8), limits = c("#1B9E77", "#7570B3", "#d95f02"), labels = c("Disorganized","Negative",  "Positive")) +  guides(fill = guide_legend(title = "Stronger predictor:")) +
+  geom_vline(xintercept = 0, color = "black", size = 1.15)
 
 ```
+
+
 ```{r}
+
 boot_dat_mod_long_3 %>% 
-  filter(predictor == "int_diff") %>%
+  filter(predictor == "int_diff_dispos") %>%
   mutate(perc = ifelse(value > 0,
                        "diz",
                        "pos")) %>%
@@ -235,7 +321,7 @@ boot_dat_mod_long_3 %>%
   prop.table() %>% `*`(100) %>% round(0)
 
 boot_dat_mod_long_3 %>% 
-  filter(predictor == "main_diff") %>%
+  filter(predictor == "main_diff_dispos") %>%
   mutate(perc = ifelse(value > 0,
                        "diz",
                        "pos")) %>%
@@ -243,8 +329,31 @@ boot_dat_mod_long_3 %>%
   select(perc) %>% 
   table() %>% 
   prop.table() %>% `*`(100) %>% round(0)
+
 ```
 
+```{r}
+
+boot_dat_mod_long_3 %>% 
+  filter(predictor == "main_diff_disneg") %>%
+  mutate(perc = ifelse(value > 0,
+                       "diz",
+                       "neg")) %>%
+  
+  select(perc) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(0)
+
+boot_dat_mod_long_3 %>% 
+  filter(predictor == "int_diff_disneg") %>%
+  mutate(perc = ifelse(value > 0,
+                       "diz",
+                       "neg")) %>%
+  select(perc) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(0)
+
+```
 
 ```{r}
 # extracting results into a tibble
@@ -255,36 +364,43 @@ boot_dat_mod_9 <-
   
 map(
     ~tibble(
-      Stress_Main = na.omit(.x$stressor_higher),
+      Stress_Main = na.omit(.x$stressor_mean_centered_int),
       Disorganized_Main = na.omit(.x$mss_dis_score),
       Positive_Main = na.omit(.x$mss_pos_score),
       Negative_Main = na.omit(.x$mss_neg_score),
-      Disorganized_Stress_Interaction = na.omit(.x$"stressor_higher:mss_dis_score"),
-      Positive_Stress_Interaction = na.omit(.x$"stressor_higher:mss_pos_score"),
-      Negative_Stress_Interaction = na.omit(.x$"stressor_higher:mss_neg_score")
+      Disorganized_Stress_Interaction = na.omit(.x$"stressor_mean_centered_int:mss_dis_score"),
+      Positive_Stress_Interaction = na.omit(.x$"stressor_mean_centered_int:mss_pos_score"),
+      Negative_Stress_Interaction = na.omit(.x$"stressor_mean_centered_int:mss_neg_score")
       
     )
   ) %>%
   bind_rows() %>% 
-  mutate(main_diff = Disorganized_Main - Positive_Main,
-         int_diff = Disorganized_Stress_Interaction - Positive_Stress_Interaction)
+  mutate(main_diff_dispos = Disorganized_Main - Positive_Main,
+         int_diff_dispos = Disorganized_Stress_Interaction - Positive_Stress_Interaction,
+         main_diff_disneg = Disorganized_Main - Negative_Main,
+         int_diff_disneg = Disorganized_Stress_Interaction - Negative_Stress_Interaction)
   
 ```
+
 
 ```{r}
 boot_dat_mod_9 <- 
   boot_dat_mod_9 %>%
-  select(-contains("Negative"), -Stress_Main)
+  select(-Stress_Main)
   
 boot_dat_mod_long_9 <- 
   boot_dat_mod_9 %>%
     pivot_longer(c(
     Disorganized_Main, 
     Positive_Main,
+    Negative_Main,
     Disorganized_Stress_Interaction,
     Positive_Stress_Interaction,
-    main_diff,
-    int_diff), names_to = "predictor", values_to = "value")
+    Negative_Stress_Interaction,
+    main_diff_dispos,
+    int_diff_dispos,
+    main_diff_disneg,
+    int_diff_disneg), names_to = "predictor", values_to = "value")
   
   
 boot_dat_mod_long_9 <- 
@@ -293,49 +409,70 @@ boot_dat_mod_long_9 <-
                         "diz",
                         ifelse((predictor == "Positive_Main" & value > 0),
                                "poz",
-                               ifelse((predictor == "main_diff" & value > 0),
-                                      "diz",
-                                      ifelse((predictor == "int_diff" & value > 0),
-                                             "diz",
-                                             ifelse((predictor == "main_diff" & value < 0),
-                                                    "poz",
-                                                    ifelse((predictor == "int_diff" & value < 0),
-                                                           "poz",
-                                                           ifelse((predictor == "Disorganized_Stress_Interaction" & value > 0),
-                                                                  "diz",
-                                                                  ifelse((predictor == "Positive_Stress_Interaction" & value > 0),
-                                                                         "poz",
-                                                                         "graj"))))))))) %>% 
-  mutate(color = factor(color, levels = c("diz", "poz", "graj"), labels = c("#1B9E77", "#d95f02", "#6E6E6E")))
-  
+                        ifelse((predictor == "Negative_Main" & value > 0),
+                               "neg",
+                        ifelse((predictor == "main_diff_dispos" & value > 0),
+                               "diz",
+                        ifelse((predictor == "int_diff_dispos" & value > 0),
+                               "diz",
+                        ifelse((predictor == "main_diff_dispos" & value < 0),
+                               "poz",
+                        ifelse((predictor == "int_diff_dispos" & value < 0),
+                               "poz",
+                        ifelse((predictor == "main_diff_disneg" & value > 0),
+                               "diz",
+                        ifelse((predictor == "int_diff_disneg" & value > 0),
+                               "diz",
+                        ifelse((predictor == "main_diff_disneg" & value < 0),
+                               "neg",
+                        ifelse((predictor == "int_diff_disneg" & value < 0),
+                               "neg",
+                        ifelse((predictor == "Disorganized_Stress_Interaction" & value > 0),
+                               "diz",
+                        ifelse((predictor == "Positive_Stress_Interaction" & value > 0),
+                               "poz",
+                        ifelse((predictor == "Negative_Stress_Interaction" & value > 0),
+                               "neg",
+                               "graj"))))))))))))))) %>% 
+  mutate(color = factor(color, levels = c("diz", "neg", "poz", "graj"), labels = c("#1B9E77", "#7570B3", "#d95f02","#6E6E6E")))
 
 ```
 
+
+
+
 ```{r}
 
-
-pred_names_event <- c(
+pred_names <- c(
   
   Disorganized_Main = "In predicting momentary event-unpleasantness",
   Positive_Main = "",
-  main_diff = "In predicting momentary event-unpleasantness",
+  Negative_Main = "",
+  main_diff_dispos = "",
+  main_diff_disneg = "In predicting momentary event-unpleasantness",
   Disorganized_Stress_Interaction = "In predicting momentary stress-reactivity",
   Positive_Stress_Interaction = "",
-  int_diff = "In predicting momentary stress-reactivity")
+  Negative_Stress_Interaction = "",
+  int_diff_dispos = "",
+  int_diff_disneg = "In predicting momentary stress-reactivity")
+
 
 
 boot_dat_mod_long_9 %>%
-  filter(predictor != "int_diff" & predictor != "main_diff") %>%
+  filter(predictor != "int_diff_dispos" & predictor != "main_diff_dispos" & predictor != "int_diff_disneg" & predictor != "main_diff_disneg") %>%
   ggplot(aes(x = value)) +
   geom_histogram(aes(fill = color), binwidth = 0.01) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
-  guides(fill = FALSE) +
-  theme_minimal() +
-  facet_wrap(vars(predictor), ncol = 2, labeller = as_labeller(pred_names_event)) +
-  labs(x = "Bootstrapped estimates",
+
+  theme_minimal() + 
+  # theme(legend.key.size = unit(3, 'lines'),
+  #                         legend.key = element_rect(size = 10, color = "white")) +
+  
+  facet_wrap(vars(predictor), ncol = 2, labeller = as_labeller(pred_names)) +
+  labs(x = "Bootstrapped estimates of multilevel model coefficients",
        y = "Frequencies") +
-  scale_fill_manual(values = alpha(c("#1B9E77", "#d95f02"), 0.7), limits = c("#1B9E77", "#d95f02"), labels = c("Disorganized", "Positive")) +
-  guides(fill = guide_legend(title = "Positive est.:")) +
-  geom_vline(xintercept = 0, color = "black", size = 1.3)
+scale_fill_manual(values = alpha(c("#1B9E77", "#7570B3", "#d95f02"), 0.8), limits = c("#1B9E77", "#7570B3", "#d95f02"), labels = c("Disorganized","Negative",  "Positive")) +
+  guides(fill = guide_legend(title = "Positive coef.:")) +
+  geom_vline(xintercept = 0, color = "black", size = 1.15)
 
 
 
@@ -343,24 +480,25 @@ boot_dat_mod_long_9 %>%
 
 ```{r}
 boot_dat_mod_long_9 %>%
-  filter(predictor == "int_diff" | predictor == "main_diff") %>%
+  filter(predictor == "int_diff_dispos" | predictor == "main_diff_dispos" | predictor == "int_diff_disneg" | predictor == "main_diff_disneg") %>%
   ggplot(aes(x = value)) +
-  geom_histogram(aes(fill = color), binwidth = 0.01) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
+  geom_histogram(aes(fill = color), binwidth = 0.02) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
   theme_minimal() +
-  facet_wrap(vars(predictor), ncol = 1, labeller = as_labeller(pred_names_event)) +
-  labs(x = bquote(~ italic("Differences") ~ "between single bootstrapped estimates"),
+  facet_wrap(vars(predictor), ncol = 2, labeller = as_labeller(pred_names)) +
+  labs(x = bquote(~ italic("Differences") ~ "between single bootstrapped estimates of model coefficents"),
        y = "Frequencies") +
   
 #  labs(x = "Distriibution of differences between bootstrapped estimates", y = "Freqiencies") +
 # ggtitle("Differences between bootstrapped estimates of disorg. and positive domain") +
-  scale_fill_manual(values = alpha(c("#1B9E77", "#d95f02"), 0.7), labels = c("Disorganized", "Positive")) +
-  guides(fill = guide_legend(title = "Stronger predictor:")) +
-  geom_vline(xintercept = 0, color = "black", size = 1.3)
+scale_fill_manual(values = alpha(c("#1B9E77", "#7570B3", "#d95f02"), 0.8), limits = c("#1B9E77", "#7570B3", "#d95f02"), labels = c("Disorganized","Negative",  "Positive")) +  guides(fill = guide_legend(title = "Stronger predictor:")) +
+  geom_vline(xintercept = 0, color = "black", size = 1.15)
+
 
 ```
+
 ```{r}
 boot_dat_mod_long_9 %>% 
-  filter(predictor == "main_diff") %>%
+  filter(predictor == "main_diff_dispos") %>%
   mutate(perc = ifelse(value > 0,
                        "diz",
                        "pos")) %>%
@@ -370,7 +508,7 @@ boot_dat_mod_long_9 %>%
   prop.table() %>% `*`(100) %>% round(0)
 
 boot_dat_mod_long_9 %>% 
-  filter(predictor == "int_diff") %>%
+  filter(predictor == "int_diff_dispos") %>%
   mutate(perc = ifelse(value > 0,
                        "diz",
                        "pos")) %>%
@@ -380,3 +518,23 @@ boot_dat_mod_long_9 %>%
 ```
 
 
+```{r}
+boot_dat_mod_long_9 %>% 
+  filter(predictor == "main_diff_disneg") %>%
+  mutate(perc = ifelse(value > 0,
+                       "diz",
+                       "neg")) %>%
+  
+  select(perc) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(0)
+
+boot_dat_mod_long_9 %>% 
+  filter(predictor == "int_diff_disneg") %>%
+  mutate(perc = ifelse(value > 0,
+                       "diz",
+                       "neg")) %>%
+  select(perc) %>% 
+  table() %>% 
+  prop.table() %>% `*`(100) %>% round(0)
+```

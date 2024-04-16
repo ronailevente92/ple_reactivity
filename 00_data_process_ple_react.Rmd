@@ -367,17 +367,18 @@ dat_cleaned <-
  
 dat_cleaned <- 
   dat_cleaned %>% 
+  mutate(stressor_mean = rowMeans(select(., c(stressor_1:stressor_19, stressor_21)), na.rm = T)) %>% 
   group_by(id_esm) %>%
-  mutate_at(vars(stressor_sum, ple_cfa, event_unpleasantness),
+  mutate_at(vars(stressor_sum, stressor_mean, ple_cfa, event_unpleasantness),
             .funs = list(centered = ~ scale(., scale = F, center = T))) %>% 
   distinct() %>% 
   ungroup() %>%
   group_by(id_esm, diary_counter) %>%
   mutate(event_unpleasantness_3days_mean = mean(event_unpleasantness, na.rm = T)) %>% 
   ungroup() %>% 
-  mutate(stressor_sum_centered_int = stressor_sum_centered * -1)
+  mutate(stressor_sum_centered_int = stressor_sum_centered * -1,
+         stressor_mean_centered_int = stressor_mean_centered * -1)
 ```
-
 
 # 5: creation of final dataset for modeling
 
@@ -395,7 +396,7 @@ model_dat <-
          ple_control, ple_strange, ple_thoughts,
          ple_suspicion, ple_treatment, ple_thougtscontrol, ple_sum,
 
-         contains(c("_mean", "stressor_sum")),
+         contains(c("_mean", "stressor")),
          mss_dis, mss_pos, mss_neg, 
          mss_dis_score, mss_pos_score, 
          mss_neg_score, 
