@@ -46,27 +46,19 @@ testing predictive validity of stressor scale
 
 m_baseline_ple <- 
   lmer(
-    ple_cfa ~ stressor_mean_centered_int + (stressor_mean_centered_int | id_esm), data = model_dat)
-
-m_baseline_ple_detrended <- 
-  lmer(
-    ple_cfa ~ stressor_mean_centered_int + day + beep + (stressor_mean_centered_int | id_esm), data = model_dat)
-
+    ple_cfa ~ age + gender + day + beep + 
+      stressor_mean_centered_int + (stressor_mean_centered_int | id_esm), data = model_dat)
 
 m_baseline_event <- 
   lmer(
-    event_unpleasantness ~  stressor_mean_centered_int + (stressor_mean_centered_int | id_esm), data = model_dat)
+    event_unpleasantness ~ age + gender + day + beep + 
+      stressor_mean_centered_int + (stressor_mean_centered_int | id_esm), data = model_dat)
 
-m_baseline_event_detrended <- 
-  lmer(
-    event_unpleasantness ~  stressor_mean_centered_int + day + beep + (stressor_mean_centered_int | id_esm), data = model_dat)
-
-
-tab_model(m_baseline_ple, m_baseline_ple_detrended, m_baseline_event, m_baseline_event_detrended,
+tab_model(m_baseline_ple, m_baseline_event,
           show.aicc = T, show.std = T)
 
-saveRDS(m_baseline_ple_detrended, "models/m_baseline_ple_detrended.rds")
-saveRDS(m_baseline_event_detrended, "models/m_baseline_event_detrended.rds")
+saveRDS(m_baseline_ple, "models/m_baseline_ple.rds")
+saveRDS(m_baseline_event, "models/m_baseline_event.rds")
 
 
 
@@ -124,7 +116,7 @@ m5 <-
 
 
 tab_model(m1, m2, 
-          m3, m4, m5,
+          m3,
           show.aicc = T, show.std = T)
 
 saveRDS(m1, "models/m1.rds")
@@ -193,7 +185,7 @@ m11 <-
       (stressor_mean_centered_int | id_esm), data = model_dat)
 
 
-tab_model(m7, m8, m9, m10, m11,
+tab_model(m7, m8, m9,
   show.aicc = T, show.std = T)
 
 saveRDS(m7, "models/m7.rds")

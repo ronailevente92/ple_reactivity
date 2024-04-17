@@ -2,7 +2,7 @@
 title: "03_new_bootstrapping_visu"
 author: "Levente Ronai"
 date: "2024-04-08"
-output: html_document
+output: 
   html_document:
    theme: spacelab
    code_download: true
@@ -45,22 +45,22 @@ model_dat <- read.csv("data_processed/model_dat.csv")
 
 ```{r}
 
-# m_baseline_ple_detrended <- readRDS("models/m_baseline_ple_detrended.rds")
-# 
-# boot_baseline_ple_detrended <-
-#   bootstrap(
-#     m_baseline_ple_detrended,
-#     .f = fixef,
-#     type = "wild",
-#     hccme =  "hc2",
-#     aux.dist = "mammen",
-#     B = 5000 ,
-#     resample = c(TRUE, TRUE)
-#   )
-# 
-# saveRDS(boot_baseline_ple_detrended, "models/boot_baseline_ple_detrended.rds")
+m_baseline_ple <- readRDS("models/m_baseline_ple.rds")
 
-boot_baseline_ple_detrended <- readRDS("models/boot_baseline_ple_detrended.rds")
+boot_m_baseline_ple <-
+  bootstrap(
+    m_baseline_ple,
+    .f = fixef,
+    type = "wild",
+    hccme =  "hc2",
+    aux.dist = "mammen",
+    B = 5000 ,
+    resample = c(TRUE, TRUE)
+  )
+
+saveRDS(boot_m_baseline_ple, "models/boot_m_baseline_ple.rds")
+
+boot_m_baseline_ple <- readRDS("models/boot_m_baseline_ple.rds")
 
 ```
 
@@ -138,6 +138,7 @@ as.data.frame(ci_boot_m3) %>% print.data.frame(., digits = 2)
 ```
 
 ```{r}
+
 m9 <- readRDS("models/m9.rds")
 
 boot_m9 <-
@@ -147,15 +148,16 @@ boot_m9 <-
     type = "wild",
     hccme =  "hc2",
     aux.dist = "mammen",
-    B = 5000 ,
+    B = 5000,
     resample = c(TRUE, TRUE)
   )
 
 saveRDS(boot_m9, "models/boot_m9.rds")
 
 boot_m9 <- readRDS("models/boot_m9.rds")
-
 ```
+
+
 
 ```{r}
 list_case_m9 <- 
@@ -274,7 +276,7 @@ pred_names <- c(
 boot_dat_mod_long_3 %>%
   filter(predictor != "int_diff_dispos" & predictor != "main_diff_dispos" & predictor != "int_diff_disneg" & predictor != "main_diff_disneg") %>%
   ggplot(aes(x = value)) +
-  geom_histogram(aes(fill = color), binwidth = 0.01) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
+  geom_histogram(aes(fill = color), binwidth = 0.05) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
 
   theme_minimal() + 
   # theme(legend.key.size = unit(3, 'lines'),
@@ -295,7 +297,7 @@ scale_fill_manual(values = alpha(c("#1B9E77", "#7570B3", "#d95f02"), 0.8), limit
 boot_dat_mod_long_3 %>%
   filter(predictor == "int_diff_dispos" | predictor == "main_diff_dispos" | predictor == "int_diff_disneg" | predictor == "main_diff_disneg") %>%
   ggplot(aes(x = value)) +
-  geom_histogram(aes(fill = color), binwidth = 0.02) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
+  geom_histogram(aes(fill = color), binwidth = 0.0) + #, breaks = seq(-0.15, 0.15, by = 0.005)) +
   theme_minimal() +
   facet_wrap(vars(predictor), ncol = 2, labeller = as_labeller(pred_names)) +
   labs(x = bquote(~ italic("Differences") ~ "between single bootstrapped estimates of model coefficents"),
