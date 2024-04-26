@@ -28,6 +28,15 @@ model_dat <- read_csv("data_processed/model_dat.csv")
 dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 ```
 
+```{r}
+
+model_dat <- 
+  model_dat %>% 
+  filter(!is.na(stressor_mean_centered_int) & !is.na(ple_cfa)) %>% 
+  distinct()
+
+```
+
 
 # filtering datasets
 ```{r}
@@ -186,7 +195,10 @@ dat_not_included %>%
             SD        = round(sd(age), digits = 2),
             Range_min = min(age),
             Range_max = max(age))
+```
 
+
+```{r}
 # gender
   # 1 = Female
   # 2 = Male
@@ -199,8 +211,10 @@ dat_not_included %>%
   select(gender) %>% 
   table() %>% 
   prop.table() %>% `*`(100) %>% round(2)
-  
+```
 
+
+```{r}
 # education
   # 1 = Primary school or lower
   # 3 = Vocational school without high school diploma
@@ -217,8 +231,10 @@ dat_not_included %>%
   select(edu) %>% 
   table() %>% 
   prop.table() %>% `*`(100) %>% round(2)
+```
 
 
+```{r}
 # MSS scores
   dat_not_included <- 
     dat_not_included %>% 
@@ -259,8 +275,11 @@ dat_not_included %>%
               SD        = round(sd(mss_dis), digits = 2),
               Range_min = min(mss_dis),
               Range_max = max(mss_dis))
-    
-  ## MSS_pos
+```
+
+
+```{r}
+## MSS_pos
     dat_not_included %>%
     select(session, age, gender, edu, mss_pos) %>% 
     distinct() %>% 
@@ -269,9 +288,12 @@ dat_not_included %>%
               Median    = round(median(mss_pos), digits = 2),
               SD        = round(sd(mss_pos), digits = 2),
               Range_min = min(mss_pos),
-              Range_max = max(mss_pos)) 
-    
-  ## MSS_neg
+              Range_max = max(mss_pos))
+```
+
+
+```{r}
+## MSS_neg
     dat_not_included %>%
     select(session, age, gender, edu, mss_neg) %>% 
     distinct() %>% 
@@ -296,8 +318,10 @@ model_dat %>%
               SD        = round(sd(age), digits = 2),
               Range_min = min(age),
               Range_max = max(age))
+```
 
 
+```{r}
 # gender
 model_dat %>% 
   select(id_esm, gender) %>%
@@ -314,7 +338,10 @@ model_dat %>%
 
   # 1 = Female
   # 2 = Male
-  
+```
+
+
+```{r}
 # education
 model_dat %>% 
   select(id_esm, edu) %>%
@@ -335,8 +362,10 @@ model_dat %>%
   # 5 = Bachelor's or Master's degree
   # 6 = Doctorate (PhD)
   # 7 = Other
+```
 
 
+```{r}
 # MSS scores
   ## MSS_dis
     model_dat %>%
@@ -348,8 +377,11 @@ model_dat %>%
               SD        = round(sd(mss_dis), digits = 2),
               Range_min = min(mss_dis),
               Range_max = max(mss_dis))
-    
-  ## MSS_pos
+```
+
+
+```{r}
+## MSS_pos
     model_dat %>%
     select(id_esm, age, gender, edu, mss_pos) %>% 
     distinct() %>% 
@@ -358,9 +390,12 @@ model_dat %>%
               Median    = round(median(mss_pos), digits = 2),
               SD        = round(sd(mss_pos), digits = 2),
               Range_min = min(mss_pos),
-              Range_max = max(mss_pos)) 
-    
-  ## MSS_neg
+              Range_max = max(mss_pos))
+```
+
+
+```{r}
+## MSS_neg
     model_dat %>%
     select(id_esm, age, gender, edu, mss_neg) %>% 
     distinct() %>% 
@@ -380,11 +415,12 @@ model_dat %>%
 # total number of completed esm surveys
 model_dat %>%
   distinct() %>% 
-  filter(!is.na(created_esm)) %>% 
   summarise(n_id  = length(unique(id_esm)),
             n_obs = length(created_esm))
+```
 
 
+```{r}
 #...and per capita
 model_dat %>%
   filter(!is.na(created_esm)) %>%
@@ -397,8 +433,10 @@ model_dat %>%
             mean_n_obs   = mean(n_obs),
             median_n_obs = median(n_obs),
             sd_n_obs     = sd(n_obs))
+```
 
 
+```{r}
 # descriptives of ple
   model_dat %>%
     filter(!is.na(created_esm)) %>%
@@ -410,8 +448,10 @@ model_dat %>%
       median_ple_sum = median(ple_sum),
       sd_ple_sum    = sd(ple_sum)
   )
-  
-  
+```
+
+
+```{r}
 # descriptives of event unpleasantness
   model_dat %>%
     filter(!is.na(created_esm)) %>%
@@ -423,18 +463,23 @@ model_dat %>%
       median_event_unpleasantness = median(event_unpleasantness),
       sd_event_unpleasantness    = sd(event_unpleasantness)
   )
-  
+```
+
+
+```{r}
 # descriptives of stressor exposure
   model_dat %>% 
-    filter(!is.na(date_diary) & !is.na(stressor_sum)) %>% 
-    select(id_esm, date_diary, stressor_sum) %>%
+    filter(!is.na(date_diary) & !is.na(stressor_mean)) %>% 
+    select(id_esm, date_diary, stressor_mean) %>%
+    mutate(stressor_mean = stressor_mean * -1) %>% 
+  
     unique() %>%
     summarise(
-      max_stressor_sum    = max(stressor_sum),
-      min_stressor_sum    = min(stressor_sum),
-      mean_stressor_sum   = mean(stressor_sum),
-      median_stressor_sum = median(stressor_sum),
-      sd_stressor_sum     = sd(stressor_sum)
+      max_stressor_mean    = max(stressor_mean),
+      min_stressor_mean    = min(stressor_mean),
+      mean_stressor_mean   = mean(stressor_mean),
+      median_stressor_mean = median(stressor_mean),
+      sd_stressor_mean     = sd(stressor_mean)
     )
 ```
 
@@ -472,25 +517,33 @@ model_dat_distinct <- model_dat %>%
   
   wilcox_test(age_compare, age ~ group, paired = FALSE) %>% add_significance()
   wilcox_effsize(age_compare, age ~ group, paired = FALSE)
-  
+```
 
+
+```{r}
 # test for gender distribution
   gender_compare_not_included <- tibble(gender = dat_not_included$gender, group = "not_included")
   gender_compare_final <- tibble(gender = model_dat_distinct$gender, group = "final")
   gender_compare <- gender_compare_not_included %>% bind_rows(gender_compare_final)
   
   chisq.test(gender_compare$group, gender_compare$gender)
+```
 
 
+```{r}
 # test for education
   edu_compare_not_included <- tibble(edu = dat_not_included$edu, group = "not_included")
   edu_compare_final <- tibble(edu = model_dat_distinct$edu, group = "final")
   edu_compare <- edu_compare_not_included %>% bind_rows(edu_compare_final)
   
-  edu_chisq <- chisq.test(edu_compare$group, edu_compare$edu)
-  cramersv(edu_chisq)
+  edu_chisq <- chisq.test(edu_compare$group, edu_compare$edu, simulate.p.value = TRUE)
   
+  edu_chisq
+  cramersv(edu_chisq)
+```
 
+
+```{r}
 # test for median mss scores
   
   ## mss dis
@@ -501,8 +554,11 @@ model_dat_distinct <- model_dat %>%
   
     # mann-whitney test
     wilcox.test(dat_not_included$mss_dis, model_dat_distinct$mss_dis)
-    
-  ## mss pos
+```
+
+
+```{r}
+## mss pos
     # normality test
     shapiro.test(dat_not_included$mss_pos)
     shapiro.test(model_dat_distinct$mss_pos)
@@ -510,8 +566,11 @@ model_dat_distinct <- model_dat %>%
   
     # mann-whitney test
     wilcox.test(dat_not_included$mss_pos, model_dat_distinct$mss_pos)
-    
-  ## mss neg
+```
+
+
+```{r}
+## mss neg
     # normality test
     shapiro.test(dat_not_included$mss_neg)
     shapiro.test(model_dat_distinct$mss_neg)
@@ -603,6 +662,39 @@ hist_ple_cfa <- ggplot(ple_cfa_figure) +
 hist_ple_cfa
 ```
 
+```{r, warning=F}
+
+model_dat %>% 
+  select(id_esm, mss_dis, mss_pos, mss_neg) %>% 
+  distinct() %>% 
+    
+  gather("dimension", "value", 2:4) %>%
+  
+  ggplot(aes(dimension, value)) +
+  
+  ggdist::stat_halfeye(aes(fill = factor(dimension)), adjust = 1.5, width = .8, .width = 0, justification = -.18, point_colour = NA, position = position_dodge(width = 0.8), width = 0.25) + 
+  geom_boxplot(width = .21, outlier.shape = NA, lwd = 0.6, position = position_dodge(width = 0.8), width = 0.25) + 
+  geom_jitter(aes(color = factor(dimension)), width = .05, height = 0.1, alpha = .2, show.legend = F) +
+ 
+  guides(fill = "none") + 
+  xlab("") +
+  ylab("Total raw scores") +
+  labs(fill = "", title = "") + 
+  scale_y_continuous(limits = c(0, 14), breaks = c(0, 2, 4, 6, 8, 10, 12, 14)) +
+  theme_classic() +
+  #+ 
+  scale_fill_manual(labels = c("Disorganized", "Negative", "Positive"), values = alpha(c("#1B9E77", "#7570B3", "#d95f02"), 0.55)) +  
+  
+  scale_color_manual(labels = c("Disorganized", "Negative", "Positive"), values = c("#1B9E77", "#7570B3", "#d95f02")) + 
+  scale_x_discrete(labels =c(
+    "Disorganized",
+    "Negative",
+    "Positive"))  +
+  theme(axis.text.x = element_text(angle = -30, hjust = 0, vjust = 1))
+
+ # ggsave("distr.jpeg", device = "jpeg", width = 13, height = 9, units = "cm")
+
+```
 
 ```{r}
 # # raincloud plot

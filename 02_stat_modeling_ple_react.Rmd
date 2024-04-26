@@ -44,23 +44,23 @@ testing predictive validity of stressor scale
 
 ```{r}
 
-m_baseline_ple <- 
-  lmer(
-    ple_cfa ~ age + gender + day + beep + 
-      stressor_mean_centered_int + (stressor_mean_centered_int | id_esm), data = model_dat)
+# m_baseline_ple <- 
+#   lmer(
+#     ple_cfa ~ age + gender + day + beep + 
+#       stressor_mean_centered_int + (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# m_baseline_event <- 
+#   lmer(
+#     event_unpleasantness ~ age + gender + day + beep + 
+#       stressor_mean_centered_int + (stressor_mean_centered_int | id_esm), data = model_dat)
+# saveRDS(m_baseline_ple, "models/m_baseline_ple.rds")
+# saveRDS(m_baseline_event, "models/m_baseline_event.rds")
 
-m_baseline_event <- 
-  lmer(
-    event_unpleasantness ~ age + gender + day + beep + 
-      stressor_mean_centered_int + (stressor_mean_centered_int | id_esm), data = model_dat)
+m_baseline_ple <- readRDS("models/m_baseline_ple.rds")
+m_baseline_event <- readRDS("models/m_baseline_event.rds")
 
 tab_model(m_baseline_ple, m_baseline_event,
           show.aicc = T, show.std = T)
-
-saveRDS(m_baseline_ple, "models/m_baseline_ple.rds")
-saveRDS(m_baseline_event, "models/m_baseline_event.rds")
-
-
 
 ```
 
@@ -69,61 +69,65 @@ saveRDS(m_baseline_event, "models/m_baseline_event.rds")
 
 ```{r}
 
-m1 <- 
-  lmer(
-    ple_cfa ~ 
-      day + beep + gender + age +
-      stressor_mean_centered_int * mss_neg_score  +
-      #     stressor_mean_centered_int * mss_pos_score  +
-      #     stressor_mean_centered_int * mss_dis_score  +
-      (stressor_mean_centered_int | id_esm), data = model_dat)
+# m1 <- 
+#   lmer(
+#     ple_cfa ~ 
+#       day + beep + gender + age +
+#       stressor_mean_centered_int * mss_neg_score  +
+#       #     stressor_mean_centered_int * mss_pos_score  +
+#       #     stressor_mean_centered_int * mss_dis_score  +
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# m2 <- 
+#   lmer(
+#     ple_cfa ~ 
+#       day + beep + gender + age +
+#       stressor_mean_centered_int * mss_neg_score  +
+#       stressor_mean_centered_int * mss_pos_score  +
+#       #     stressor_mean_centered_int * mss_dis_score  +
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# m3 <- 
+#   lmer(
+#     ple_cfa ~ 
+#       day + beep + gender + age +
+#       stressor_mean_centered_int * mss_neg_score  +
+#       stressor_mean_centered_int * mss_pos_score  +
+#       stressor_mean_centered_int * mss_dis_score  +
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# 
+# m4 <-
+#   lmer(
+#     ple_cfa ~
+#       day + beep + gender + age +
+#       # stressor_mean_centered_int * mss_neg_score  +
+#       # stressor_mean_centered_int * mss_pos_score  +
+#       stressor_mean_centered_int * mss_dis_score  +
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# m5 <-
+#   lmer(
+#     ple_cfa ~
+#       day + beep + gender + age +
+#       # stressor_mean_centered_int * mss_neg_score  +
+#       stressor_mean_centered_int * mss_pos_score  +
+#       # stressor_mean_centered_int * mss_dis_score  +
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
 
-m2 <- 
-  lmer(
-    ple_cfa ~ 
-      day + beep + gender + age +
-      stressor_mean_centered_int * mss_neg_score  +
-      stressor_mean_centered_int * mss_pos_score  +
-      #     stressor_mean_centered_int * mss_dis_score  +
-      (stressor_mean_centered_int | id_esm), data = model_dat)
+# saveRDS(m1, "models/m1.rds")
+# saveRDS(m2, "models/m2.rds")
+# saveRDS(m3, "models/m3.rds")
+# saveRDS(m4, "models/m4.rds")
+# saveRDS(m5, "models/m5.rds")
 
-m3 <- 
-  lmer(
-    ple_cfa ~ 
-      day + beep + gender + age +
-      stressor_mean_centered_int * mss_neg_score  +
-      stressor_mean_centered_int * mss_pos_score  +
-      stressor_mean_centered_int * mss_dis_score  +
-      (stressor_mean_centered_int | id_esm), data = model_dat)
-m4 <-
-  lmer(
-    ple_cfa ~
-      day + beep + gender + age +
-      # stressor_mean_centered_int * mss_neg_score  +
-      # stressor_mean_centered_int * mss_pos_score  +
-      stressor_mean_centered_int * mss_dis_score  +
-      (stressor_mean_centered_int | id_esm), data = model_dat)
-
-
-m5 <-
-  lmer(
-    ple_cfa ~
-      day + beep + gender + age +
-      # stressor_mean_centered_int * mss_neg_score  +
-      stressor_mean_centered_int * mss_pos_score  +
-      # stressor_mean_centered_int * mss_dis_score  +
-      (stressor_mean_centered_int | id_esm), data = model_dat)
-
+m1 <- readRDS("models/m1.rds")
+m2 <- readRDS("models/m2.rds")
+m3 <- readRDS("models/m3.rds")
 
 tab_model(m1, m2, 
           m3,
           show.aicc = T, show.std = T)
-
-saveRDS(m1, "models/m1.rds")
-saveRDS(m2, "models/m2.rds")
-saveRDS(m3, "models/m3.rds")
-saveRDS(m4, "models/m4.rds")
-saveRDS(m5, "models/m5.rds")
 
 ```
 
@@ -136,64 +140,64 @@ vif(m3)
 
 ```{r}
 
+# m7 <- 
+#   lmer(
+#     event_unpleasantness ~ 
+#       day + beep + gender + age +
+#       stressor_mean_centered_int * mss_neg_score +
+#       # stressor_mean_centered_int * mss_pos_score +
+#       #stressor_mean_centered_int * mss_dis_score + 
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# 
+# m8 <- 
+#   lmer(
+#     event_unpleasantness ~ 
+#       day + beep + gender + age +
+#       stressor_mean_centered_int * mss_neg_score +
+#       stressor_mean_centered_int * mss_pos_score +
+#       #      stressor_mean_centered_int * mss_dis_score + 
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# m9 <- 
+#   lmer(
+#     event_unpleasantness ~ 
+#       day + beep + gender + age +
+#       stressor_mean_centered_int * mss_neg_score +
+#       stressor_mean_centered_int * mss_pos_score +
+#       stressor_mean_centered_int * mss_dis_score + 
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# 
+# m10 <-
+#   lmer(
+#     event_unpleasantness ~
+#       day + beep + gender + age +
+#       # stressor_mean_centered_int * mss_neg_score +
+#       # stressor_mean_centered_int * mss_pos_score +
+#       stressor_mean_centered_int * mss_dis_score +
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# 
+# m11 <-
+#   lmer(
+#     event_unpleasantness ~
+#       day + beep + gender + age +
+#       # stressor_mean_centered_int * mss_neg_score +
+#       stressor_mean_centered_int * mss_pos_score +
+#       #   stressor_mean_centered_int * mss_dis_score +
+#       (stressor_mean_centered_int | id_esm), data = model_dat)
+# saveRDS(m7, "models/m7.rds")
+# saveRDS(m8, "models/m8.rds")
+# saveRDS(m9, "models/m9.rds")
+# saveRDS(m10, "models/m10.rds")
+# saveRDS(m11, "models/m11.rds")
 
-m7 <- 
-  lmer(
-    event_unpleasantness ~ 
-      day + beep + gender + age +
-      stressor_mean_centered_int * mss_neg_score +
-      # stressor_mean_centered_int * mss_pos_score +
-      #stressor_mean_centered_int * mss_dis_score + 
-      (stressor_mean_centered_int | id_esm), data = model_dat)
-
-
-m8 <- 
-  lmer(
-    event_unpleasantness ~ 
-      day + beep + gender + age +
-      stressor_mean_centered_int * mss_neg_score +
-      stressor_mean_centered_int * mss_pos_score +
-      #      stressor_mean_centered_int * mss_dis_score + 
-      (stressor_mean_centered_int | id_esm), data = model_dat)
-
-m9 <- 
-  lmer(
-    event_unpleasantness ~ 
-      day + beep + gender + age +
-      stressor_mean_centered_int * mss_neg_score +
-      stressor_mean_centered_int * mss_pos_score +
-      stressor_mean_centered_int * mss_dis_score + 
-      (stressor_mean_centered_int | id_esm), data = model_dat)
-
-
-m10 <-
-  lmer(
-    event_unpleasantness ~
-      day + beep + gender + age +
-      # stressor_mean_centered_int * mss_neg_score +
-      # stressor_mean_centered_int * mss_pos_score +
-      stressor_mean_centered_int * mss_dis_score +
-      (stressor_mean_centered_int | id_esm), data = model_dat)
-
-m11 <-
-  lmer(
-    event_unpleasantness ~
-      day + beep + gender + age +
-      # stressor_mean_centered_int * mss_neg_score +
-      stressor_mean_centered_int * mss_pos_score +
-      #   stressor_mean_centered_int * mss_dis_score +
-      (stressor_mean_centered_int | id_esm), data = model_dat)
-
+m7 <- readRDS("models/m7.rds")
+m8 <- readRDS("models/m8.rds")
+m9 <- readRDS("models/m9.rds")
 
 tab_model(m7, m8, m9,
   show.aicc = T, show.std = T)
-
-saveRDS(m7, "models/m7.rds")
-saveRDS(m8, "models/m8.rds")
-saveRDS(m9, "models/m9.rds")
-saveRDS(m10, "models/m10.rds")
-saveRDS(m11, "models/m11.rds")
-
 
 
 ```
