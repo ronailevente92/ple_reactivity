@@ -45,6 +45,10 @@ dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 
 model_dat <- read.csv("data_processed/model_dat.csv")
 ```
+```{r}
+tab_model(m2, m3, m8, m9)
+```
+
 
 ```{r}
 
@@ -109,6 +113,74 @@ ci_boot_baseline_event <-
 as.data.frame(ci_boot_baseline_event) %>% print.data.frame(., digits = 2)
 
 ```
+```{r}
+
+m2 <- readRDS("models/m2.rds")
+# 
+# boot_m2 <-
+#   bootstrap(
+#     m2,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# 
+# saveRDS(boot_m2, "models/boot_m2.rds")
+# 
+m8 <- readRDS("models/m8.rds")
+# 
+# boot_m8 <-
+#   bootstrap(
+#     m8,
+#     .f = fixef,
+#     type = "wild",
+#     hccme =  "hc2",
+#     aux.dist = "mammen",
+#     B = 5000 ,
+#     resample = c(TRUE, TRUE)
+#   )
+# saveRDS(boot_m8, "models/boot_m8.rds")
+
+boot_m2 <- readRDS("models/boot_m2.rds")
+
+boot_m8 <- readRDS("models/boot_m8.rds")
+```
+
+```{r}
+list_case_m2 <- 
+  list(boot_m2)
+ci_boot_m2 <-
+  list_case_m2 %>%
+  map(confint, type = "norm")
+
+(ci_boot_m2 <- 
+  as.data.frame(ci_boot_m2)  %>% 
+  mutate_at(vars(estimate, lower, upper), ~ round(., 3)) %>%
+  print.data.frame(.))
+
+# # knitr::kable(ci_boot_m2, format = "html")
+
+
+```
+
+```{r}
+list_case_m8 <- 
+  list(boot_m8)
+ci_boot_m8 <-
+  list_case_m8 %>%
+  map(confint, type = "norm")
+
+ci_boot_m8 <- 
+  as.data.frame(ci_boot_m8) %>% 
+  mutate_at(vars(estimate, lower, upper), ~ round(., 3)) %>%
+  print.data.frame(.)
+
+
+# knitr::kable(ci_boot_m8, format = "html")
+```
 
 ```{r}
 
@@ -135,9 +207,14 @@ list_case_m3 <-
   list(boot_m3)
 ci_boot_m3 <-
   list_case_m3 %>%
-  map(confint, type = "norm")
-as.data.frame(ci_boot_m3) %>% print.data.frame(., digits = 2)
+    map(confint, type = "norm")
 
+(ci_boot_m3 <- 
+  as.data.frame(ci_boot_m3) %>% 
+  mutate_at(vars(estimate, lower, upper), ~ round(., 3)) %>%
+  print.data.frame(.))
+
+# knitr::kable(ci_boot_m3, format = "html")
 ```
 
 ```{r}
@@ -166,8 +243,15 @@ list_case_m9 <-
 
 ci_boot_m9 <-
   list_case_m9 %>%
-  map(confint, type = "norm")
-as.data.frame(ci_boot_m9) %>% print.data.frame(., digits = 2)
+ map(confint, type = "norm")
+
+(ci_boot_m9 <- 
+  as.data.frame(ci_boot_m9)%>% 
+  mutate_at(vars(estimate, lower, upper), ~ round(., 3)) %>%
+  print.data.frame(.))
+
+
+# knitr::kable(ci_boot_m9, format = "html")
 
 ```
 

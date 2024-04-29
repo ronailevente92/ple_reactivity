@@ -74,7 +74,10 @@ dat_not_included <- initial_sample_pre %>%
               SD        = round(sd(age), digits = 2),
               Range_min = min(age),
               Range_max = max(age))
+```
 
+
+```{r}
 # gender
   # 1 = Female
   # 2 = Male
@@ -93,8 +96,10 @@ initial_sample_pre %>%
   select(gender) %>% 
   table() %>% 
   prop.table() %>% `*`(100) %>% round(2)
+```
 
 
+```{r}
 # education
   # 1 = Primary school or lower
   # 3 = Vocational school without high school diploma
@@ -117,8 +122,10 @@ initial_sample_pre %>%
   select(edu) %>% 
   table() %>% 
   prop.table() %>% `*`(100) %>% round(2)
+```
 
 
+```{r}
 # MSS scores
   initial_sample_pre <- 
     initial_sample_pre %>% 
@@ -159,8 +166,11 @@ initial_sample_pre %>%
               SD        = round(sd(mss_dis), digits = 2),
               Range_min = min(mss_dis),
               Range_max = max(mss_dis))
-    
-  ## MSS_pos
+```
+
+
+```{r}
+## MSS_pos
     initial_sample_pre %>%
     select(session, age, gender, edu, mss_pos) %>% 
     distinct() %>% 
@@ -169,9 +179,12 @@ initial_sample_pre %>%
               Median    = round(median(mss_pos), digits = 2),
               SD        = round(sd(mss_pos), digits = 2),
               Range_min = min(mss_pos),
-              Range_max = max(mss_pos)) 
-    
-  ## MSS_neg
+              Range_max = max(mss_pos))
+```
+
+
+```{r}
+## MSS_neg
     initial_sample_pre %>%
     select(session, age, gender, edu, mss_neg) %>% 
     distinct() %>% 
@@ -616,7 +629,30 @@ dat_cleaned %>%
             min_final_compl    = min(esm_compl_final, na.rm = T),
             max_final_compl    = max(esm_compl_final, na.rm = T)
   )
+```
 
+
+```{r}
+dat_cleaned %>%
+  select(id_esm, created_esm, day, beep, max_day_esm) %>%
+  distinct() %>%
+  group_by(id_esm) %>%
+  summarise(completed = sum(!is.na(created_esm)),
+            all = max_day_esm * 8, 
+            esm_compl_final = (completed / all) * 100
+  ) %>%
+  ungroup() %>%
+  summarise(
+            median_final_compl_n = median(completed, na.rm = T),
+            mean_final_compl_n   = mean(completed, na.rm = T),
+            sd_final_compl_n     = sd(completed, na.rm = T),
+            min_final_compl_n    = min(completed, na.rm = T),
+            max_final_compl_n    = max(completed, na.rm = T)
+  )
+```
+
+
+```{r}
 # visualizing compliance rate
 dat_cleaned_figure <- dat_cleaned %>%
   select(id_esm, created_esm, day, beep, max_day_esm) %>%
@@ -631,6 +667,89 @@ dat_cleaned_figure <- dat_cleaned %>%
 
 visu_compliance <- ggplot(dat_cleaned_figure) +
   geom_histogram(aes(esm_compl_final), bins = 40, fill = "#A9A9A9") + #, color = "#797979") +
+  theme_classic() +
+  labs(
+    x = "Compliance rate (%)",
+    y = "Number of participants"
+  ) +
+  theme(axis.title = element_text(size = 12))
+
+visu_compliance
+```
+
+
+# calculating three-day survey compliance rate in final sample
+```{r}
+
+
+# identifying day of quitting
+dat_maxday_diary <- 
+  dat_cleaned %>% 
+  select(id_esm, date_diary, three_day_block) %>% 
+  filter(!is.na(date_diary)) %>% 
+  group_by(id_esm) %>% 
+  summarise(max_day_diary = max(three_day_block))
+
+dat_cleaned <- dat_cleaned %>% 
+  left_join(dat_maxday_diary, by = "id_esm")
+
+
+# calculating compliance rate
+dat_cleaned %>%
+  select(id_esm, date_diary, max_day_diary) %>%
+  distinct() %>%
+  group_by(id_esm) %>%
+  summarise(completed = sum(!is.na(date_diary)),
+            all = max_day_diary, 
+            diary_compl_final = (completed / all) * 100
+  ) %>%
+  ungroup() %>%
+  summarise(median_final_compl_n = median(completed, na.rm = T),
+            mean_final_compl_n   = mean(completed, na.rm = T),
+            sd_final_compl_n     = sd(completed, na.rm = T),
+            min_final_compl_n    = min(completed, na.rm = T),
+            max_final_compl_n    = max(completed, na.rm = T)
+  )
+```
+
+
+```{r}
+dat_cleaned %>%
+  select(id_esm, date_diary, max_day_diary) %>%
+  distinct() %>%
+  group_by(id_esm) %>%
+  summarise(completed = sum(!is.na(date_diary)),
+            all = max_day_diary, 
+            diary_compl_final = (completed / all) * 100
+  ) %>%
+  ungroup() %>%
+  summarise(median_final_compl = median(diary_compl_final, na.rm = T),
+            mean_final_compl   = mean(diary_compl_final, na.rm = T),
+            sd_final_compl     = sd(diary_compl_final, na.rm = T),
+            min_final_compl    = min(diary_compl_final, na.rm = T),
+            max_final_compl    = max(diary_compl_final, na.rm = T)
+  )
+```
+
+
+```{r, warning=F}
+# visualizing compliance rate
+dat_cleaned_figure <- 
+  dat_cleaned %>%
+  select(id_esm, date_diary, max_day_diary) %>%
+  distinct() %>%
+  group_by(id_esm) %>%
+  summarise(completed = sum(!is.na(date_diary)),
+            all = max_day_diary, 
+            diary_compl_final = (completed / all) * 100
+  ) %>%
+  ungroup() %>%
+  distinct()
+
+visu_compliance <- 
+  ggplot(dat_cleaned_figure) +
+  geom_histogram(aes(diary_compl_final), bins = 30,
+                 fill = "#A9A9A9") + #, color = "#797979") +
   theme_classic() +
   labs(
     x = "Compliance rate (%)",
