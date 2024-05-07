@@ -12,23 +12,30 @@ options(scipen = 999)
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(dplyr))
 
+
 ```
 
-### power analysis
 
-```{r, include=F}
+```{r}
+
+model_dat <- read.csv("data_processed/model_dat_stressors.csv")
 
 m3 <- readRDS("models/m3.rds")
-summary(m3)
-
-```
-
-```{r, include=F}
-
 m9 <- readRDS("models/m9.rds")
-summary(m9)
+
 ```
 
+```{r}
+
+model_dat %>% 
+  filter(!is.na(ple_cfa) & !is.na(stressor_mean_centered_int)) %>%
+  summarise(sd_stressor = sd(stressor_mean_centered_int),
+            mean_stressor = mean(stressor_mean_centered_int))
+```
+
+```{r}
+summary(m3)
+```
 
 ```{r, include=F}
 # Check if R packages are installed
@@ -59,7 +66,38 @@ library(future.apply)
 
 library(PowerAnalysisIL)
 
+
+
+# using the following parameters:
+
+# model 7, cross level interaction with random slope
+# N participants: 100,126
+# N obs: 4611
+# Fixed intercept: -0.0548185
+# Effect of the level-2 continuous variable on the intercept: 0.4391183
+# Fixed slope: 0.3745155
+# Effect of the level-2 continuous variable on the slope: 1.8491296
+# Standard deviation of level-1 errors: 0.7790
+# Autocorrelation of level-1 errors: ~ 0.2
+# Standard deviation of random intercept: 0.8678
+# Standard deviation of random slope: 2.3483
+# Correlation between the random intercept and random slope: 0.06
+# Mean of time-varying variable X: 0
+# Standard deviation of time-varying variable X: 0.13
+# without person-mean centering
+# Mean of level-2 variable W: 0
+# Standard deviation of level-2 variable W: 1
+# without centering and estimating autocorrelation
+# type I: 0,05
+# replicates: 500
+# method: max. loglikelihood.
+# 1, estimate comp. time; 2, comp. power
+
 # Using Gist: users can launch this app with:
 shiny::runGist('6bac9d35c2521cc4fd91ce4b82490236')
 
+
 ```
+
+
+
