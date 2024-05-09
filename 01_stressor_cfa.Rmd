@@ -1,6 +1,15 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "01_stressor_cfa"
+author: "Levente Ronai"
+date: "2024-04-08"
+output: 
+  html_document:
+   theme: spacelab
+   code_download: true
+   toc: true
+   toc_float: true
+editor_options: 
+  chunk_output_type: inline
 ---
 
 # Setup
@@ -162,54 +171,3 @@ compRelSEM(fit_stressor_hierarchical, tau.eq = F, dropSingle = F)
 
 ```
 
-```{r}
-dat_stressor_lev_2 <-
-  dat_cfa_stressor %>%
-  select(id_esm) %>%
-  distinct() %>%
-  cbind(lavPredict(fit_stressor_hierarchical, newdata = dat_cfa_stressor[3:10], level = 2L))
-
-dat_stressor_lev_1 <-
-  dat_cfa_stressor %>%
-  cbind(lavPredict(fit_stressor_hierarchical, newdata = dat_cfa_stressor[3:10], level = 1L)) %>%
-  select(-c(stressor_9:stressor_17))
-
-dat_stressor_both_levels <-
-  dat_stressor_lev_1 %>%
-  left_join(dat_stressor_lev_2, by = "id_esm") %>%
-  mutate(stress_balance_cfa =  stressor_I + stressor_I_b,
-         stress_social_cfa =  stressor_II + stressor_II_b,
-         stress_control_cfa =  stressor_III + stressor_III_b)
-```
-
-
-```{r}
-model_dat <- read.csv("data_processed/model_dat.csv")
-
-model_dat_stressors <-
-  model_dat %>% 
-  left_join(dat_stressor_both_levels, by = c("id_esm", "three_day_block"))
-
-
-write.csv(model_dat_stressors, "data_processed/model_dat_stressors.csv", row.names = F)
-
-```
-
-
-```{r}
-
-mean_dat <- 
-  dat_cleaned %>% 
-  # group_by(id_esm, diary_counter) %>% 
-  mutate(stressor_mean = rowMeans(select(., c(stressor_1:stressor_19, stressor_21)), na.rm = T)) %>% 
-  select(id_esm, three_day_block, stressor_sum, stressor_mean) %>% 
-  distinct()
-
-kasufha <-
-  lmer(stressor_mean ~ 1 + (1|id_esm), data = mean_dat)
-
-
-summary(kasufha)
-
-tab_model(kasufha)
-```

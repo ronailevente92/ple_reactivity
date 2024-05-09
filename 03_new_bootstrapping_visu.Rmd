@@ -45,10 +45,6 @@ dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 
 model_dat <- read.csv("data_processed/model_dat.csv")
 ```
-```{r}
-tab_model(m2, m3, m8, m9)
-```
-
 
 ```{r}
 
@@ -725,7 +721,7 @@ combined_plots_1 <-
    legend.position = "bottom",
    legend.box = "horizontal")
 
-ggsave("Fig03.jpeg", device = "jpeg", width = 28, height = 12, units = "cm")
+ggsave("Fig04.jpeg", device = "jpeg", width = 28, height = 12, units = "cm")
 
 combined_plots_1
 
@@ -935,7 +931,7 @@ combined_plots_2 <-
 
 combined_plots_2
 
-ggsave("Fig02.jpeg", device = "jpeg", width = 15, height = 22, units = "cm")
+ggsave("Fig03.jpeg", device = "jpeg", width = 15, height = 22, units = "cm")
 
 ```
 

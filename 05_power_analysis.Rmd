@@ -26,14 +26,6 @@ m9 <- readRDS("models/m9.rds")
 ```
 
 ```{r}
-
-model_dat %>% 
-  filter(!is.na(ple_cfa) & !is.na(stressor_mean_centered_int)) %>%
-  summarise(sd_stressor = sd(stressor_mean_centered_int),
-            mean_stressor = mean(stressor_mean_centered_int))
-```
-
-```{r}
 summary(m3)
 ```
 

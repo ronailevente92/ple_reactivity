@@ -132,24 +132,6 @@ tab_model(m1, m2,
 ```
 
 ```{r}
-mx <-
-  lmer(
-    ple_cfa ~
-      day + beep + gender + age +
-      mss_neg_score * stressor_mean_centered_int + 
-
-       (stressor_mean_centered_int | id_esm), data = model_dat)
-
-summary(mx, type = "int")
-
-mx_test <- 
-  lm(ple_between ~ mss_dis_score, data = model_dat %>% select(id_esm, mss_dis_score, mss_neg_score, mss_pos_score, ple_between) %>% distinct())
-
-summary(mx_test)
-```
-
-
-```{r}
 plot_model(m3, type = "diag")
 vif(m3)
 ```
