@@ -89,7 +89,7 @@ library(PowerAnalysisIL)
 # Standard deviation of level-2 variable W: 1
 # without centering and estimating autocorrelation
 # type I: 0,05
-# replicates: 500
+# replicates: 200
 # method: max. loglikelihood.
 # 1, estimate comp. time; 2, comp. power
 
