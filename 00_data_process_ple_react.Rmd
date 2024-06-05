@@ -393,8 +393,8 @@ model_dat <-
          event_unpleasantness, event_unpleasantness_centered, 
          
          ple_cfa, ple_cfa_centered, ple_between, 
-         ple_control, ple_strange, ple_thoughts,
-         ple_suspicion, ple_treatment, ple_thougtscontrol, ple_sum,
+         ple_control, ple_strange, ple_thoughts, ple_suspicion,
+         ple_mistreated = ple_treatment, ple_perception, ple_thougtscontrol, ple_familiarstrange, ple_sum,
 
          contains(c("_mean", "stressor")),
          mss_dis, mss_pos, mss_neg, 
