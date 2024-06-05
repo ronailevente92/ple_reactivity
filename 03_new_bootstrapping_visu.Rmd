@@ -294,9 +294,9 @@ map(
   ) %>%
   bind_rows() %>% 
   mutate(main_diff_dispos = Disorganized_Main - Positive_Main,
-         int_diff_dispos = Disorganized_Stress_Interaction - Positive_Stress_Interaction,
+         int_diff_dispos  = Disorganized_Stress_Interaction - Positive_Stress_Interaction,
          main_diff_disneg = Disorganized_Main - Negative_Main,
-         int_diff_disneg = Disorganized_Stress_Interaction - Negative_Stress_Interaction)
+         int_diff_disneg  = Disorganized_Stress_Interaction - Negative_Stress_Interaction)
   
 ```
 
