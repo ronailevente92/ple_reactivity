@@ -28,9 +28,8 @@ big_data <- read.csv("data_processed/big_data.csv")
 
 dat_cleaned <- 
   big_data %>% 
-  select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary, three_day_block,
-         day, beep, event_pleasantness, sad, afraid, unrested, angry, irritated,
-         contains(c("mss_", "ple_", "stressor", "dprime")), -contains(c("minutes")))
+  select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary, ended_diary, three_day_block, day, beep, event_pleasantness, sad, afraid, unrested, angry, irritated, contains(c("mss_", "ple_", "stressor", "dprime")), -contains(c("minutes"))) %>% 
+mutate(ended_diary = as_date(ended_diary))
 
 write.csv(dat_cleaned, "data_processed/dat_cleaned.csv", row.names = F)
 
@@ -388,7 +387,7 @@ dat_cleaned <-
 
 model_dat <-
   dat_cleaned %>%
-  select(id_esm, session_esm, created_esm, edu, gender, age, city, start_date, date_diary, day, beep, diary_counter, three_day_block,
+  select(id_esm, session_esm, created_esm, edu, gender, age, city, start_date, date_diary, ended_diary, day, beep, diary_counter, three_day_block,
 
          event_unpleasantness, event_unpleasantness_centered, 
          
