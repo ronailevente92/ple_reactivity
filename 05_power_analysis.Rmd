@@ -18,7 +18,7 @@ suppressPackageStartupMessages(library(dplyr))
 
 ```{r}
 
-model_dat <- read.csv("data_processed/model_dat_stressors.csv")
+model_dat <- read.csv("data_processed/model_dat.csv")
 
 m3 <- readRDS("models/m3.rds")
 m9 <- readRDS("models/m9.rds")

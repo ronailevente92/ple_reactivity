@@ -20,12 +20,9 @@ suppressPackageStartupMessages(library(xts))
 suppressPackageStartupMessages(library(psych))
 suppressPackageStartupMessages(library(qgraph))
 suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(dplyr))
-suppressPackageStartupMessages(library(purrr))
 suppressPackageStartupMessages(library(lme4))
 suppressPackageStartupMessages(library(lmerTest))
 suppressPackageStartupMessages(library(sjPlot))
-suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(car))
 suppressPackageStartupMessages(library(broom))
 suppressPackageStartupMessages(library(performance))
@@ -39,6 +36,19 @@ import data
 dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
 
 model_dat <- read.csv("data_processed/model_dat.csv")
+```
+testing the correlation between stressor-expsoure and stress-appraisal (event-unpleasantness)
+
+```{r}
+library(rstatix)
+# correlation between stressor and event unpleasantness
+model_dat %>% 
+  group_by(id_esm) %>%
+  summarise(
+    event_unpleasantness = mean(event_unpleasantness, na.rm = T),
+    stressor_mean = mean(stressor_mean, na.rm = T)*-1) %>%
+  select(event_unpleasantness, stressor_mean) %>%
+  cor_test(method = "spearman")
 ```
 
 testing predictive validity of stressor scale
@@ -60,11 +70,10 @@ testing predictive validity of stressor scale
 m_baseline_ple <- readRDS("models/m_baseline_ple.rds")
 m_baseline_event <- readRDS("models/m_baseline_event.rds")
 
-tab_model(m_baseline_ple,
+tab_model(m_baseline_event,
           show.aicc = T, show.std = T)
 
 ```
-
 
 ### ~ ple
 

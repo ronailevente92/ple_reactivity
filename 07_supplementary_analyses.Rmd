@@ -1,0 +1,226 @@
+---
+title: "07_lagged_models"
+author: "Levente Ronai"
+output: html_document
+  html_document:
+   theme: spacelab
+   code_download: true
+   toc: true
+   toc_float: true
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r, include=F}
+
+options(scipen = 999)
+
+suppressPackageStartupMessages(library(ppcor))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(rstatix))
+suppressPackageStartupMessages(library(xts))
+suppressPackageStartupMessages(library(psych))
+suppressPackageStartupMessages(library(qgraph))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(lme4))
+suppressPackageStartupMessages(library(lmerTest))
+suppressPackageStartupMessages(library(sjPlot))
+suppressPackageStartupMessages(library(car))
+suppressPackageStartupMessages(library(broom))
+suppressPackageStartupMessages(library(performance))
+suppressPackageStartupMessages(library(lmeresampler))
+
+```
+
+import data
+
+```{r, message=F, warning=F}
+dat_cleaned <- read_csv("data_processed/dat_cleaned.csv")
+
+model_dat <- read.csv("data_processed/model_dat.csv")
+```
+# lagging ples, event appraisal and stressor-exposure
+
+```{r}
+data_lagged <- 
+  model_dat %>% 
+  dplyr::select(id_esm, age, sex = gender, day, beep, diary_counter, event_unpleasantness,
+                event_unpleasantness_centered, ple_cfa, stress_exposure_centered = stressor_mean_centered_int, stress_exposure = stressor_mean, event_unpleasantness_mean = event_unpleasantness_3days_mean, contains("mss")) %>% 
+  group_by(id_esm, diary_counter) %>%
+  mutate(
+    event_unpleasantness_centered_mean = mean(event_unpleasantness_centered, na.rm = T),
+    ple_cfa_mean = mean(ple_cfa, na.rm = T)) %>% 
+  ungroup() %>% 
+  group_by(id_esm) %>%
+  mutate(
+    ple_cfa_3days_lag = lag(ple_cfa, 72),
+    event_unpleasantness_centered_3days_lag = lag(event_unpleasantness_centered, 72),
+    stress_exposure_centered_lag = lag(stress_exposure_centered, 24)) %>% 
+  ungroup() %>% 
+  group_by(id_esm, day) %>%
+  mutate(
+    ple_cfa_lag = lag(ple_cfa),
+    event_unpleasantness_centered_lag = lag(event_unpleasantness_centered)) %>% 
+  ungroup() 
+  
+```
+
+# lagged relationships between the above variables in different settings across 3-day measurement windows (diary_counter)
+
+```{r}
+lagged_1 <- 
+  lmer(ple_cfa ~ 
+         sex + age + day + beep + diary_counter + 
+         stress_exposure_centered_lag +
+         (stress_exposure_centered_lag | id_esm), data = data_lagged)
+
+lagged_2 <- 
+  lmer(stress_exposure ~ 
+         sex + age + day + beep + diary_counter +
+         ple_cfa_3days_lag + 
+         (ple_cfa_3days_lag  | id_esm), data = data_lagged)
+
+
+lagged_3 <- 
+  lmer(event_unpleasantness ~ 
+         sex + age + day + beep + diary_counter +
+         stress_exposure_centered_lag +
+         (stress_exposure_centered_lag | id_esm), data = data_lagged)
+
+lagged_4 <- 
+  lmer(stress_exposure ~ 
+         sex + age + diary_counter + event_unpleasantness_centered_3days_lag + 
+         (event_unpleasantness_centered_3days_lag  | id_esm), data = data_lagged)
+
+
+tab_model(lagged_1,
+          lagged_3, 
+          lagged_2, 
+          lagged_4, 
+          show.std = T)
+
+```
+
+# testing possible confounder effect of stressor exposure on the relationship between event unpleasantness and pleasure within individuals using partial correlations in the 3-day windows
+
+```{r}
+model_within_corr <- 
+  model_dat %>% 
+  dplyr::select(id_esm, age, gender, day, beep, diary_counter,
+                event_unpleasantness_centered, ple_cfa, stressor_mean_centered_int) %>% 
+  distinct() %>%
+  group_by(id_esm, diary_counter) %>%
+  summarise(
+    event_unpleasantness_centered_mean = mean(event_unpleasantness_centered, na.rm = T),
+    ple_cfa_mean = mean(ple_cfa, na.rm = T),
+    stressor_mean_centered_int_mean = mean(stressor_mean_centered_int, na.rm = T)) %>% 
+  ungroup() %>% 
+  filter_at(vars(event_unpleasantness_centered_mean, ple_cfa_mean, stressor_mean_centered_int_mean), all_vars(!is.na(.))) %>% 
+  group_by(id_esm) %>%
+  filter(n_distinct(diary_counter) > 2) %>%
+  ungroup()
+  
+```
+
+```{r, warning=F}
+# event_unpleasantness_centered_mean
+# ple_cfa_mean
+# stressor_mean_centered_int_mean
+
+# Apply the function to each individual
+results_partial <- 
+  model_within_corr %>%
+  group_by(id_esm) %>%
+  summarise(coef = pcor.test(event_unpleasantness_centered_mean, 
+                                         ple_cfa_mean, stressor_mean_centered_int_mean, method = "spearman")$estimate) %>% 
+  filter(!is.na(coef)) %>% 
+  mutate(partial = "stressor_as_confounder") 
+
+results_partial_2 <- 
+  model_within_corr %>%
+  group_by(id_esm) %>%
+  summarise(coef = pcor.test(event_unpleasantness_centered_mean, stressor_mean_centered_int_mean,
+                                         ple_cfa_mean, method = "spearman")$estimate) %>% 
+  filter(!is.na(coef)) %>% 
+  mutate(partial = "ple_as_confounder") 
+
+results_partial_3 <- 
+  model_within_corr %>%
+  group_by(id_esm) %>%
+  summarise(coef = pcor.test(stressor_mean_centered_int_mean,
+                                         ple_cfa_mean, event_unpleasantness_centered_mean,method = "spearman")$estimate) %>% 
+  filter(!is.na(coef)) %>% 
+  mutate(partial = "event_unpl_as_confounder") 
+
+
+results <- 
+  model_within_corr %>%
+  group_by(id_esm) %>%
+  summarise(coef = cor.test(event_unpleasantness_centered_mean, 
+                                         ple_cfa_mean, method = "spearman")$estimate) %>% 
+  filter(!is.na(coef)) %>% 
+  mutate(partial = "event_ple_corr") 
+
+results_2 <- 
+  model_within_corr %>%
+  group_by(id_esm) %>%
+  summarise(coef = cor.test(stressor_mean_centered_int_mean, 
+                                         ple_cfa_mean, method = "spearman")$estimate) %>% 
+  filter(!is.na(coef)) %>% 
+  mutate(partial = "stressor_ple_corr") 
+
+results_3 <- 
+  model_within_corr %>%
+  group_by(id_esm) %>%
+  summarise(coef = cor.test(stressor_mean_centered_int_mean, 
+                                         event_unpleasantness_centered_mean, method = "spearman")$estimate) %>% 
+  filter(!is.na(coef)) %>% 
+  mutate(partial = "stressor_event_corr") 
+
+comb <- 
+  results_partial %>% 
+  rbind(results, results_partial_2, results_partial_3, results_2, results_3)
+
+```
+
+
+```{r}
+# descriptives for partial_corrs$partial_corr
+comb %>% 
+  group_by(partial) %>% 
+  summarise(mean = round(mean(coef), 2),
+            meadian = round(median(coef),2),
+            sd = round(sd(coef), 2)) %>% 
+  filter(partial == "event_ple_corr" | partial == "stressor_as_confounder")
+```
+```{r}
+comb %>% 
+  group_by(partial) %>% 
+  summarise(mean = round(mean(coef), 2),
+            meadian = round(median(coef),2),
+            sd = round(sd(coef), 2)) %>% 
+  filter(partial == "stressor_event_corr" | partial == "ple_as_confounder")
+```
+
+
+```{r}
+comb %>% 
+  group_by(partial) %>% 
+  summarise(mean = round(mean(coef), 2),
+            meadian = round(median(coef),2),
+            sd = round(sd(coef), 2)) %>% 
+  filter(partial == "stressor_ple_corr" | partial == "event_unpl_as_confounder")
+```
+# histograms per partial corr coefficents 
+
+```{r}
+comb %>% 
+  ggplot() +
+  aes(x = coef, fill = partial) +
+  geom_histogram(binwidth = 0.15) +
+  facet_wrap(~partial) +
+  theme_minimal() +
+  # black line to medians
+```
+
+
