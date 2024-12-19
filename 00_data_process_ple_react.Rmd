@@ -30,7 +30,7 @@ dat_cleaned <-
   big_data %>% 
   select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary, three_day_block,
          day, beep, event_pleasantness, sad, afraid, unrested, angry, irritated,
-         contains(c("mss_", "ple_", "stressor", "dprime")), -contains(c("minutes")))
+         contains(c("mss_", "mzq", "ple_", "stressor", "dprime")), -contains(c("minutes")))
 
 write.csv(dat_cleaned, "data_processed/dat_cleaned.csv", row.names = F)
 
@@ -292,6 +292,29 @@ dat_cleaned <-
 
 
 ```
+
+```{r}
+mzq_model <- 
+  
+  
+'     mzq_refuse_reflection_score =~  mzq_1 + mzq_2 + mzq_4 # + mzq_3 
+            
+      mzq_emotional_awareness_score =~  mzq_5 + mzq_6 + mzq_7 + mzq_8
+
+      mzq_psychic_equivalence_score =~  mzq_9 + mzq_10 + mzq_11 + mzq_12
+
+      mzq_regulate_affect_score =~  mzq_13 + mzq_14 + mzq_15
+
+      mzq_sum_score =~ mzq_refuse_reflection_score + mzq_emotional_awareness_score + 
+      mzq_psychic_equivalence_score + mzq_regulate_affect_score
+
+'
+
+fit_mzq <- cfa(model = mzq_model, data = dat_mzq, std.lv = TRUE)
+                              
+                
+```
+
 
 ```{r}
 
