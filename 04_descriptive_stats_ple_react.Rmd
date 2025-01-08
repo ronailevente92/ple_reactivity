@@ -474,7 +474,7 @@ model_dat %>%
       min_event_unpleasantness    = min(event_unpleasantness),
       mean_event_unpleasantness   = mean(event_unpleasantness),
       median_event_unpleasantness = median(event_unpleasantness),
-      sd_event_unpleasantness    = sd(event_unpleasantness)
+      sd_event_unpleasantness     = sd(event_unpleasantness)
   )
 ```
 
@@ -594,160 +594,199 @@ model_dat_distinct <- model_dat %>%
 ```
 
 
-
 # calculating ESM survey compliance rate in final sample
 ```{r}
-# filtering dataset
-# dat_unfiltered <- dat_unfiltered %>% 
-#   filter(!is.na(day) & day != 0)
-
-
 # identifying day of quitting
-dat_maxday_esm <- dat_cleaned %>% 
+dat_maxday_esm <- model_dat %>% 
   select(id_esm, created_esm, day) %>% 
   filter(!is.na(created_esm)) %>% 
   group_by(id_esm) %>% 
   summarise(max_day_esm = max(day))
 
-dat_cleaned <- dat_cleaned %>% 
+model_dat <- model_dat %>% 
   left_join(dat_maxday_esm, by = "id_esm")
 
+# number of days spent in the study
+model_dat %>% 
+  select(id_esm, max_day_esm) %>%
+  distinct() %>% 
+  reframe(N               = n(),
+          median_num_days = median(max_day_esm, na.rm = T),
+          mean_num_days   = mean(max_day_esm, na.rm = T),
+          sd_num_days     = sd(max_day_esm, na.rm = T),
+          min_num_days    = min(max_day_esm, na.rm = T),
+          max_num_days    = max(max_day_esm, na.rm = T)
+  )
 
-# calculating compliance rate
-dat_cleaned %>%
+# calculating compliance rate (percentage)
+model_dat %>%
   select(id_esm, created_esm, day, beep, max_day_esm) %>%
   distinct() %>%
   group_by(id_esm) %>%
-  summarise(completed = sum(!is.na(created_esm)),
+  reframe(completed = sum(!is.na(created_esm)),
             all = max_day_esm * 8, 
-            esm_compl_final = (completed / all) * 100
+            esm_compl_final = (completed / all) * 100,
   ) %>%
   ungroup() %>%
-  summarise(median_final_compl = median(esm_compl_final, na.rm = T),
-            mean_final_compl   = mean(esm_compl_final, na.rm = T),
-            sd_final_compl     = sd(esm_compl_final, na.rm = T),
-            min_final_compl    = min(esm_compl_final, na.rm = T),
-            max_final_compl    = max(esm_compl_final, na.rm = T)
+  reframe(n                  = n(),
+          median_final_compl = median(esm_compl_final, na.rm = T),
+          mean_final_compl   = mean(esm_compl_final, na.rm = T),
+          sd_final_compl     = sd(esm_compl_final, na.rm = T),
+          min_final_compl    = min(esm_compl_final, na.rm = T),
+          max_final_compl    = max(esm_compl_final, na.rm = T)
   )
-```
 
-
-```{r}
-dat_cleaned %>%
+# calculating number of surveys completed
+model_dat %>%
   select(id_esm, created_esm, day, beep, max_day_esm) %>%
   distinct() %>%
   group_by(id_esm) %>%
-  summarise(completed = sum(!is.na(created_esm)),
-            all = max_day_esm * 8, 
-            esm_compl_final = (completed / all) * 100
+  reframe(completed = sum(!is.na(created_esm)),
+          all = max_day_esm * 8, 
+          esm_compl_final = (completed / all) * 100
   ) %>%
   ungroup() %>%
-  summarise(
-            median_final_compl_n = median(completed, na.rm = T),
-            mean_final_compl_n   = mean(completed, na.rm = T),
-            sd_final_compl_n     = sd(completed, na.rm = T),
-            min_final_compl_n    = min(completed, na.rm = T),
-            max_final_compl_n    = max(completed, na.rm = T)
+  reframe(n                    = n(),
+          median_final_compl_n = median(completed, na.rm = T),
+          mean_final_compl_n   = mean(completed, na.rm = T),
+          sd_final_compl_n     = sd(completed, na.rm = T),
+          min_final_compl_n    = min(completed, na.rm = T),
+          max_final_compl_n    = max(completed, na.rm = T)
   )
-```
 
 
-```{r}
 # visualizing compliance rate
-dat_cleaned_figure <- dat_cleaned %>%
+dat_figure_esm_compl <- model_dat %>%
   select(id_esm, created_esm, day, beep, max_day_esm) %>%
   distinct() %>% 
   group_by(id_esm) %>%
-  summarise(completed = sum(!is.na(created_esm)),
-            all = max_day_esm * 8,
-            esm_compl_final = (completed / all) * 100
+  reframe(completed = sum(!is.na(created_esm)),
+          all = max_day_esm * 8,
+          esm_compl_final = (completed / all) * 100
   ) %>%
   ungroup() %>%
   distinct()
 
-visu_compliance <- ggplot(dat_cleaned_figure) +
+visu_esm_compliance <- ggplot(dat_figure_esm_compl) +
   geom_histogram(aes(esm_compl_final), bins = 40, fill = "#A9A9A9") + #, color = "#797979") +
-  theme_classic() +
+  theme_classic(base_size = 16) +
   labs(
     x = "Compliance rate (%)",
     y = "Number of participants"
   ) +
   theme(axis.title = element_text(size = 12))
 
-visu_compliance
+visu_esm_compliance
+
+# visualizing number of days
+# ???
+  
+# correlation between ESM compliance and MSS-B subscores
+## preprocessing
+dat_corr_esm_compl_mssb <- model_dat %>% 
+  select(id_esm, created_esm, day, beep, max_day_esm, mss_pos, mss_neg, mss_dis) %>%
+  distinct() %>%
+  group_by(id_esm) %>%
+  mutate(completed = sum(!is.na(created_esm)),
+          all = max_day_esm * 8, 
+          esm_compl_final = (completed / all) * 100,
+  ) %>% 
+  select(id_esm, esm_compl_final, mss_pos, mss_neg, mss_dis) %>% 
+  distinct()
+
+## correlation for MSS-B positive subscale
+### normality test
+shapiro.test(dat_corr_esm_compl_mssb$esm_compl_final)
+shapiro.test(dat_corr_esm_compl_mssb$mss_pos)
+  # -> normality not assumed -> spearman
+
+### Spearman correlation test
+cor.test(dat_corr_esm_compl_mssb$esm_compl_final, dat_corr_esm_compl_mssb$mss_pos, method = "spearman")
+
+## correlation for MSS-B negative subscale
+### normality test
+shapiro.test(dat_corr_esm_compl_mssb$mss_neg)
+  # -> normality not assumed -> spearman
+
+### Spearman correlation test
+cor.test(dat_corr_esm_compl_mssb$esm_compl_final, dat_corr_esm_compl_mssb$mss_neg, method = "spearman")
+
+## correlation for MSS-B disorganization subscale
+### normality test
+shapiro.test(dat_corr_esm_compl_mssb$mss_dis)
+  # -> normality not assumed -> spearman
+
+### Spearman correlation test
+cor.test(dat_corr_esm_compl_mssb$esm_compl_final, dat_corr_esm_compl_mssb$mss_dis, method = "spearman")
 ```
 
 
 # calculating three-day survey compliance rate in final sample
 ```{r}
-
-
 # identifying day of quitting
 dat_maxday_diary <- 
-  dat_cleaned %>% 
-  select(id_esm, date_diary, three_day_block) %>% 
-  filter(!is.na(date_diary)) %>% 
-  group_by(id_esm) %>% 
-  summarise(max_day_diary = max(three_day_block))
+  model_dat %>%
+  filter(!is.na(ended_diary)) %>%
+  select(id_esm, three_day_block, ended_diary) %>%
+  distinct() %>% 
+  group_by(id_esm) %>%
+  summarize(max_day_diary = max(three_day_block))
 
-dat_cleaned <- dat_cleaned %>% 
+model_dat <- model_dat %>% 
   left_join(dat_maxday_diary, by = "id_esm")
 
+# model_dat_missing <- model_dat %>% 
+  # semi_join(missing, by = "id_esm")
 
-# calculating compliance rate
-dat_cleaned %>%
-  select(id_esm, date_diary, max_day_diary) %>%
+# calculating compliance rate (percentage)
+model_dat %>%
+  select(id_esm, ended_diary, max_day_diary) %>%
   distinct() %>%
   group_by(id_esm) %>%
-  summarise(completed = sum(!is.na(date_diary)),
-            all = max_day_diary, 
-            diary_compl_final = (completed / all) * 100
+  reframe(completed = sum(!is.na(ended_diary)),
+          all = max_day_diary, 
+          diary_compl_final = (completed / all) * 100
   ) %>%
   ungroup() %>%
-  summarise(median_final_compl_n = median(completed, na.rm = T),
-            mean_final_compl_n   = mean(completed, na.rm = T),
-            sd_final_compl_n     = sd(completed, na.rm = T),
-            min_final_compl_n    = min(completed, na.rm = T),
-            max_final_compl_n    = max(completed, na.rm = T)
+  reframe(median_final_compl_n = median(diary_compl_final, na.rm = T),
+          mean_final_compl_n   = mean(diary_compl_final, na.rm = T),
+          sd_final_compl_n     = sd(diary_compl_final, na.rm = T),
+          min_final_compl_n    = min(diary_compl_final, na.rm = T),
+          max_final_compl_n    = max(diary_compl_final, na.rm = T)
   )
-```
 
-
-```{r}
-dat_cleaned %>%
-  select(id_esm, date_diary, max_day_diary) %>%
+# calculating number of surveys completed
+model_dat %>%
+  select(id_esm, ended_diary, max_day_diary) %>%
   distinct() %>%
   group_by(id_esm) %>%
-  summarise(completed = sum(!is.na(date_diary)),
-            all = max_day_diary, 
-            diary_compl_final = (completed / all) * 100
+  reframe(completed = sum(!is.na(ended_diary)),
+          all = max_day_diary, 
+          diary_compl_final = (completed / all) * 100
   ) %>%
   ungroup() %>%
-  summarise(median_final_compl = median(diary_compl_final, na.rm = T),
-            mean_final_compl   = mean(diary_compl_final, na.rm = T),
-            sd_final_compl     = sd(diary_compl_final, na.rm = T),
-            min_final_compl    = min(diary_compl_final, na.rm = T),
-            max_final_compl    = max(diary_compl_final, na.rm = T)
+  reframe(median_final_compl = median(completed, na.rm = T),
+          mean_final_compl   = mean(completed, na.rm = T),
+          sd_final_compl     = sd(completed, na.rm = T),
+          min_final_compl    = min(completed, na.rm = T),
+          max_final_compl    = max(completed, na.rm = T)
   )
-```
 
-
-```{r, warning=F}
 # visualizing compliance rate
-dat_cleaned_figure <- 
-  dat_cleaned %>%
-  select(id_esm, date_diary, max_day_diary) %>%
+dat_figure_diary_compliance <- 
+  model_dat %>%
+  select(id_esm, ended_diary, max_day_diary) %>%
   distinct() %>%
   group_by(id_esm) %>%
-  summarise(completed = sum(!is.na(date_diary)),
-            all = max_day_diary, 
-            diary_compl_final = (completed / all) * 100
+  reframe(completed = sum(!is.na(ended_diary)),
+          all = max_day_diary, 
+          diary_compl_final = (completed / all) * 100
   ) %>%
   ungroup() %>%
   distinct()
 
-visu_compliance <- 
-  ggplot(dat_cleaned_figure) +
+visu_compliance_diary <- 
+  ggplot(dat_figure_diary_compliance) +
   geom_histogram(aes(diary_compl_final), bins = 30,
                  fill = "#A9A9A9") + #, color = "#797979") +
   theme_classic() +
@@ -757,9 +796,47 @@ visu_compliance <-
   ) +
   theme(axis.title = element_text(size = 12))
 
-visu_compliance
-```
+visu_compliance_diary
 
+
+# correlation between diary compliance and MSS-B subscores
+## preprocessing
+dat_corr_diary_compl_mssb <- model_dat %>% 
+  select(id_esm, ended_diary, max_day_diary, mss_pos, mss_neg, mss_dis) %>%
+  distinct() %>%
+  group_by(id_esm) %>%
+  mutate(completed = sum(!is.na(ended_diary)),
+          all = max_day_diary, 
+          diary_compl_final = (completed / all) * 100
+  ) %>% 
+  select(id_esm, diary_compl_final, mss_pos, mss_neg, mss_dis) %>% 
+  distinct()
+
+## correlation for MSS-B positive subscale
+### normality test
+shapiro.test(dat_corr_diary_compl_mssb$diary_compl_final)
+shapiro.test(dat_corr_diary_compl_mssb$mss_pos)
+  # -> normality not assumed -> spearman
+
+### Spearman correlation test
+cor.test(dat_corr_diary_compl_mssb$diary_compl_final, dat_corr_diary_compl_mssb$mss_pos, method = "spearman")
+
+## correlation for MSS-B negative subscale
+### normality test
+shapiro.test(dat_corr_diary_compl_mssb$mss_neg)
+  # -> normality not assumed -> spearman
+
+### Spearman correlation test
+cor.test(dat_corr_diary_compl_mssb$diary_compl_final, dat_corr_diary_compl_mssb$mss_neg, method = "spearman")
+
+## correlation for MSS-B disorganization subscale
+### normality test
+shapiro.test(dat_corr_diary_compl_mssb$mss_dis)
+  # -> normality not assumed -> spearman
+
+### Spearman correlation test
+cor.test(dat_corr_diary_compl_mssb$diary_compl_final, dat_corr_diary_compl_mssb$mss_dis, method = "spearman")
+```
 
 # distribution of PLE CFA scores
 ```{r}
