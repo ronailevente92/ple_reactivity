@@ -28,14 +28,11 @@ big_data <- read.csv("data_processed/big_data.csv")
 
 dat_cleaned <- 
   big_data %>% 
-<<<<<<< HEAD
   select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary, three_day_block,
          day, beep, event_pleasantness, sad, afraid, unrested, angry, irritated,
          contains(c("mss_", "mzq", "ple_", "stressor", "dprime")), -contains(c("minutes")))
-=======
   select(id_esm, session_esm, created_esm, age, gender, edu, city, start_date, date_esm, date_diary, ended_diary, three_day_block, day, beep, event_pleasantness, sad, afraid, unrested, angry, irritated, contains(c("mss_", "ple_", "stressor", "dprime")), -contains(c("minutes"))) %>% 
 mutate(ended_diary = as_date(ended_diary))
->>>>>>> 7e40ec391b32b7e4cbf2ddd15c8da8c9a93197e0
 
 write.csv(dat_cleaned, "data_processed/dat_cleaned.csv", row.names = F)
 
